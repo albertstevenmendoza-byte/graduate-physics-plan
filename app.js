@@ -1,236 +1,271 @@
 /* ══════════════════════════════════════════════════
-   UNIT 1730 — Physics Tracker · app.js
+   UNIT 1730 — Physics Tracker
+   app.js — Data + Core Logic
    ══════════════════════════════════════════════════ */
 
 'use strict';
 
 /* ────────────────────────────────────────────────
    DATA: Daily Schedule
+   Each task has: id, section, time, label, sub, type
+   type → controls left-strip color class
+   session → A/B/C/D badge for study blocks
    ──────────────────────────────────────────────── */
-const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const DAY_SHORT = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
 
+const DAY_NAMES  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DAY_SHORT  = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+// Fixed tasks that appear on every weekday (Mon-Fri)
 const WEEKDAY_FIXED = [
-  { id:'work',     section:'morning',   time:'6:00 AM – 3:30 PM', label:'Work Shift',       sub:'Novus Foods · Plant 1730 · Inventory Control Lead', type:'work' },
-  { id:'family',   section:'afternoon', time:'3:30 PM – 4:30 PM', label:'Family Time',       sub:'Home arrival · decompress · Patty & daughter',      type:'family' },
-  { id:'exercise', section:'afternoon', time:'4:30 PM – 5:30 PM', label:'Strength Training', sub:'1-hour exercise block',                              type:'exercise' },
-  { id:'dinner',   section:'afternoon', time:'5:30 PM – 6:00 PM', label:'Dinner',            sub:'',                                                   type:'dinner' },
+  { id:'work',     section:'morning',   time:'6:00 AM – 3:30 PM', label:'Work Shift',        sub:'Novus Foods · Plant 1730 · Inventory Control Lead', type:'work' },
+  { id:'family',   section:'afternoon', time:'3:30 PM – 4:30 PM', label:'Family Time',        sub:'Home arrival · decompress · Patty & daughter',      type:'family' },
+  { id:'exercise', section:'afternoon', time:'4:30 PM – 5:30 PM', label:'Strength Training',  sub:'1-hour exercise block',                              type:'exercise' },
+  { id:'dinner',   section:'afternoon', time:'5:30 PM – 6:00 PM', label:'Dinner',             sub:'',                                                   type:'dinner' },
 ];
 
+// Fixed tasks for weekends
 const WEEKEND_FIXED = [
-  { id:'exercise_wknd', section:'morning', time:'~ Morning', label:'Exercise',        sub:'1-hour workout',                               type:'exercise' },
-  { id:'family_wknd',   section:'morning', time:'Ongoing',   label:'Family Priority', sub:'Primary weekend focus — Patty & daughter',     type:'family' },
+  { id:'exercise_wknd', section:'morning', time:'~ Morning',  label:'Exercise',         sub:'1-hour workout',                                  type:'exercise' },
+  { id:'family_wknd',   section:'morning', time:'Ongoing',    label:'Family Priority',  sub:'Primary weekend focus — Patty & daughter',        type:'family' },
 ];
 
-// Evening/variable tasks keyed by day index (0=Sun … 6=Sat)
+// Evening/variable tasks by day index (0=Sun … 6=Sat)
 const EVENING = {
-  0: [
+  0: [ // Sunday
     { id:'study_sun', section:'study', time:'Morning or downtime blocks', label:'Type A — Heavy Calc Block', sub:'GR / QFT deep calculations · ~2.5 hrs targeted', type:'study', session:'A' },
   ],
-  1: [
-    { id:'baseball_mon', section:'evening', time:'6:00 PM – 8:00 PM', label:"Daughter's Baseball",       sub:'Priority family event',                              type:'event' },
-    { id:'study_mon',    section:'evening', time:'8:15 PM onward',     label:'Type C — Problem Grinding', sub:'Continue ongoing problem set · ~1.75 hrs',           type:'study', session:'C' },
+  1: [ // Monday
+    { id:'baseball_mon', section:'evening', time:'6:00 PM – 8:00 PM', label:"Daughter's Baseball",    sub:'Priority family event',                              type:'event' },
+    { id:'study_mon',    section:'evening', time:'8:15 PM onward',     label:'Type C — Problem Grinding', sub:'Continue ongoing problem set · ~1.75 hrs',         type:'study', session:'C' },
   ],
-  2: [
+  2: [ // Tuesday — best weekday window
     { id:'study_tue', section:'evening', time:'6:00 PM onward', label:'Type B — New Material + Launch', sub:'Read chapter section · start new problems · ~2.5 hrs', type:'study', session:'B' },
   ],
-  3: [
-    { id:'baseball_wed', section:'evening', time:'6:00 PM – 7:00 PM', label:"Daughter's Baseball",       sub:'Priority family event',                             type:'event' },
-    { id:'study_wed',    section:'evening', time:'7:15 PM onward',     label:'Type C — Problem Grinding', sub:'Continue problem set · ~1.75 hrs',                  type:'study', session:'C' },
+  3: [ // Wednesday
+    { id:'baseball_wed', section:'evening', time:'6:00 PM – 7:00 PM', label:"Daughter's Baseball",    sub:'Priority family event',                             type:'event' },
+    { id:'study_wed',    section:'evening', time:'7:15 PM onward',     label:'Type C — Problem Grinding', sub:'Continue problem set · ~1.75 hrs',                type:'study', session:'C' },
   ],
-  4: [
-    { id:'baseball_thu', section:'evening', time:'6:00 PM – 8:00 PM', label:"Daughter's Baseball",       sub:'Most weeks — confirm schedule',                      type:'event' },
-    { id:'study_thu',    section:'evening', time:'8:15 PM onward',     label:'Type C — Problem Grinding', sub:'Finish set / timed derivation drill · ~1.5 hrs',     type:'study', session:'C' },
+  4: [ // Thursday
+    { id:'baseball_thu', section:'evening', time:'6:00 PM – 8:00 PM', label:"Daughter's Baseball",    sub:'Most weeks — confirm schedule',                      type:'event' },
+    { id:'study_thu',    section:'evening', time:'8:15 PM onward',     label:'Type C — Problem Grinding', sub:'Finish set / timed derivation drill · ~1.5 hrs',  type:'study', session:'C' },
   ],
-  5: [
+  5: [ // Friday — flex
     { id:'study_fri', section:'evening', time:'6:00 PM onward', label:'Type D — Flex Block', sub:'Review · synthesis · or family time · 0–1.5 hrs', type:'study', session:'D' },
   ],
-  6: [
+  6: [ // Saturday — primary heavy-calc day
     { id:'study_sat', section:'study', time:'Morning / Downtime blocks', label:'Type A — Heavy Calc Block', sub:'Primary weekend calculation session · ~3 hrs', type:'study', session:'A' },
   ],
 };
 
 /* ────────────────────────────────────────────────
    DATA: Curriculum
+   Structure: array of modules, each with items[]
    item.type: 'reading' | 'problem' | 'milestone'
    ──────────────────────────────────────────────── */
 const CURRICULUM = [
   {
-    id: 'phase0', phase: 'Phase 0', title: 'Diagnostic Baseline',
-    weeks: 'Week 1', subtitle: 'Cold assessment — no new material',
+    id: 'phase0',
+    phase: 'Phase 0',
+    title: 'Diagnostic Baseline',
+    weeks: 'Week 1',
+    subtitle: 'Cold assessment — no new material',
     items: [
       { id:'p0_r1',  type:'reading', label:'Goldstein Ch. 2 — review constraint problem structure' },
-      { id:'p0_ps1', type:'problem', label:'Goldstein Ch. 2: 3 timed constraint problems (cold — log time & gaps)' },
-      { id:'p0_ps2', type:'problem', label:'Jackson Ch. 2–3: 2 BVPs (cold — assess Green\'s function fluency)' },
+      { id:'p0_ps1', type:'problem', label:'Goldstein Ch. 2: 3 timed constraint problems (cold — log time)' },
+      { id:'p0_ps2', type:'problem', label:'Jackson Ch. 2–3: 2 BVPs — cold assessment of Green\'s function fluency' },
       { id:'p0_ps3', type:'problem', label:'Sakurai Ch. 5: 2 perturbation theory problems (cold)' },
       { id:'p0_ps4', type:'problem', label:'Sakurai Ch. 8: Dirac equation free-particle derivation from scratch' },
     ]
   },
   {
-    id: 'mod1', phase: 'Module 1', title: 'Classical Mechanics',
-    weeks: 'Weeks 2–5', subtitle: 'Constraints & Hamiltonian Structure · Goldstein + L&L',
+    id: 'mod1',
+    phase: 'Module 1',
+    title: 'Classical Mechanics',
+    weeks: 'Weeks 2–5',
+    subtitle: 'Constraints & Hamiltonian Structure · Goldstein + L&L',
     items: [
       { id:'m1_r1',  type:'reading', label:'Goldstein Ch. 1–2: Variational principles, d\'Alembert, holonomic & non-holonomic constraints' },
       { id:'m1_r2',  type:'reading', label:'Goldstein Ch. 3: Central force problems, orbit equation' },
       { id:'m1_r3',  type:'reading', label:'Goldstein Ch. 8: Hamiltonian mechanics, Legendre transform' },
       { id:'m1_r4',  type:'reading', label:'Goldstein Ch. 9: Canonical transformations, all four generating functions F1–F4' },
       { id:'m1_r5',  type:'reading', label:'Goldstein Ch. 10: Hamilton-Jacobi theory, action-angle variables' },
-      { id:'m1_r6',  type:'reading', label:'L&L Mechanics Vol. 1 §2–4: High-density supplemental problem bank' },
+      { id:'m1_r6',  type:'reading', label:'L&L Mechanics Vol. 1 §2–4: High-density problem bank (supplemental)' },
       { id:'m1_ps1', type:'problem', label:'Goldstein 2.1, 2.2, 2.5 — Lagrangian setup, holonomic constraints' },
-      { id:'m1_ps2', type:'problem', label:'Goldstein 2.8, 2.15 — Rolling constraints, Lagrange multipliers' },
+      { id:'m1_ps2', type:'problem', label:'Goldstein 2.8, 2.15 — Rolling constraints, Lagrange multipliers, constraint forces' },
       { id:'m1_ps3', type:'problem', label:'Goldstein 2.20 — Non-holonomic rolling disk' },
       { id:'m1_ps4', type:'problem', label:'Goldstein 3.3, 3.8 — Orbit equation, Kepler problem full derivation' },
-      { id:'m1_ps5', type:'problem', label:'Goldstein 8.6, 8.12 — Hamilton\'s equations, canonical transform verification' },
-      { id:'m1_ps6', type:'problem', label:'Goldstein 9.1, 9.4 — Poisson bracket algebra ({L_i, L_j} = ε_ijk L_k etc.)' },
-      { id:'m1_ps7', type:'problem', label:'Goldstein 10.7 — HJ equation, Kepler: separation → W → constants → frequencies' },
+      { id:'m1_ps5', type:'problem', label:'Goldstein 8.6, 8.12 — Hamilton\'s equations, canonical transformation verification' },
+      { id:'m1_ps6', type:'problem', label:'Goldstein 9.1, 9.4 — Poisson bracket algebra ({L_i, L_j} = ε_ijk L_k, etc.)' },
+      { id:'m1_ps7', type:'problem', label:'Goldstein 10.7 — HJ equation, Kepler problem: separation → W → constants → frequencies' },
       { id:'m1_ms1', type:'milestone', label:'⚡ Milestone: F1–F4 for SHO — all four generating function types, prove canonical nature via PBs' },
-      { id:'m1_ms2', type:'milestone', label:'⚡ Milestone: Full HJ treatment of Kepler — separation, action variables, compute frequencies (timed)' },
+      { id:'m1_ms2', type:'milestone', label:'⚡ Milestone: Full HJ treatment of Kepler — timed, target <25 min for constrained system' },
     ]
   },
   {
-    id: 'mod2', phase: 'Module 2', title: 'Electromagnetism',
-    weeks: 'Weeks 6–12', subtitle: 'Graduate Level Remediation · Jackson',
+    id: 'mod2',
+    phase: 'Module 2',
+    title: 'Electromagnetism',
+    weeks: 'Weeks 6–12',
+    subtitle: 'Graduate Level Remediation · Jackson',
     items: [
       { id:'m2_r1',  type:'reading', label:'Jackson Ch. 1–2: Electrostatics, Green\'s functions, Dirichlet & Neumann BCs' },
-      { id:'m2_r2',  type:'reading', label:'Jackson Ch. 3: Separation of variables — spherical & cylindrical, Ylm' },
+      { id:'m2_r2',  type:'reading', label:'Jackson Ch. 3: Separation of variables — spherical & cylindrical, Ylm expansions' },
       { id:'m2_r3',  type:'reading', label:'Jackson Ch. 5–6: Magnetostatics, full Maxwell equations, displacement current' },
       { id:'m2_r4',  type:'reading', label:'Jackson Ch. 7: Plane waves, polarization, dispersion' },
       { id:'m2_r5',  type:'reading', label:'Jackson Ch. 9: Radiation — oscillating sources, Larmor formula, retarded potentials' },
       { id:'m2_r6',  type:'reading', label:'Jackson Ch. 11–12: Covariant EM — 4-vectors, F_μν, covariant Maxwell, T_μν' },
-      { id:'m2_ps1', type:'problem', label:'Jackson 2.1, 2.2, 2.7 — Image charges, BVPs' },
+      { id:'m2_ps1', type:'problem', label:'Jackson 2.1, 2.2, 2.7 — Image charges, BVPs with planar geometry' },
       { id:'m2_ps2', type:'problem', label:'Jackson 2.11, 2.23 — Full Green\'s function solutions for sphere geometry' },
       { id:'m2_ps3', type:'problem', label:'Jackson 3.1, 3.3, 3.6, 3.9, 3.10 — Spherical harmonic expansions, coefficient extraction' },
       { id:'m2_ps4', type:'problem', label:'Jackson 5.1, 5.3, 5.6 — Magnetic multipoles, vector potential' },
-      { id:'m2_ps5', type:'problem', label:'Jackson 6.4, 6.8 — Wave equation derivation from Maxwell' },
-      { id:'m2_ps6', type:'problem', label:'Jackson 7.2, 7.4, 7.19 — Plane waves, Fresnel coefficients' },
+      { id:'m2_ps5', type:'problem', label:'Jackson 6.4, 6.8 — Wave equation derivation, Maxwell in media' },
+      { id:'m2_ps6', type:'problem', label:'Jackson 7.2, 7.4, 7.19 — Plane waves, Fresnel coefficients (full derivation)' },
       { id:'m2_ps7', type:'problem', label:'Jackson 9.1, 9.3, 9.7, 9.16 — Dipole radiation, angular distribution, Larmor (synchrotron)' },
       { id:'m2_ps8', type:'problem', label:'Jackson 11.2, 11.5, 11.14 — 4-vectors, F_μν under Lorentz boost, compute T_μν' },
       { id:'m2_ps9', type:'problem', label:'Jackson 12.1, 12.3 — Covariant Lagrangian, derive Maxwell from L = −¼F_μν F^μν via E-L' },
-      { id:'m2_ms1', type:'milestone', label:'⚡ Milestone: Larmor formula from scratch — retarded potentials → fields → Poynting → sphere integral (target 45 min)' },
+      { id:'m2_ms1', type:'milestone', label:'⚡ Milestone: Larmor formula from scratch — retarded potentials → E, B fields → Poynting → integrate (target 45 min)' },
       { id:'m2_ms2', type:'milestone', label:'⚡ Milestone: Covariant Maxwell — write F_μν, derive ∂_μ F^μν = J^ν from Euler-Lagrange, compute T_μν' },
     ]
   },
   {
-    id: 'qm', phase: 'Interlude', title: 'Quantum Mechanics Review',
-    weeks: 'Weeks 13–16', subtitle: 'Graduate Level · Sakurai (fast pace — review, not remediation)',
+    id: 'qm',
+    phase: 'Interlude',
+    title: 'Quantum Mechanics Review',
+    weeks: 'Weeks 13–16',
+    subtitle: 'Graduate Level · Sakurai (fast pace — review not remediation)',
     items: [
-      { id:'qm_r1',  type:'reading', label:'Sakurai Ch. 1–2: Bra-ket, observables, spin, density matrix, quantum dynamics' },
-      { id:'qm_r2',  type:'reading', label:'Sakurai Ch. 3: Angular momentum algebra, raising/lowering operators, Clebsch-Gordan' },
+      { id:'qm_r1',  type:'reading', label:'Sakurai Ch. 1–2: Bra-ket formalism, observables, spin, density matrix, quantum dynamics' },
+      { id:'qm_r2',  type:'reading', label:'Sakurai Ch. 3: Angular momentum algebra, raising/lowering, Clebsch-Gordan coefficients' },
       { id:'qm_r3',  type:'reading', label:'Sakurai Ch. 5: Time-independent & time-dependent perturbation theory, variational method' },
-      { id:'qm_r4',  type:'reading', label:'Sakurai Ch. 6: Scattering — Born approximation, partial waves, optical theorem' },
-      { id:'qm_r5',  type:'reading', label:'Sakurai Ch. 8: Relativistic QM — Klein-Gordon (and its problems), Dirac equation' },
-      { id:'qm_ps1', type:'problem', label:'Sakurai 1.12, 1.21, 1.23 — Spin precession, expectation values, density matrix' },
-      { id:'qm_ps2', type:'problem', label:'Sakurai 2.3, 2.7 — Time evolution operators, Heisenberg picture' },
+      { id:'qm_r4',  type:'reading', label:'Sakurai Ch. 6: Scattering — Born approximation, partial waves, optical theorem, S-matrix' },
+      { id:'qm_r5',  type:'reading', label:'Sakurai Ch. 8: Relativistic QM — Klein-Gordon (problems), Dirac equation, α/β matrices, non-rel. limit' },
+      { id:'qm_ps1', type:'problem', label:'Sakurai 1.12, 1.21, 1.23 — Spin precession, expectation values, density matrix evolution' },
+      { id:'qm_ps2', type:'problem', label:'Sakurai 2.3, 2.7 — Time evolution operators, Heisenberg picture equations of motion' },
       { id:'qm_ps3', type:'problem', label:'Sakurai 3.8, 3.33, 3.35 — CG coefficients by ladder operators, Wigner-Eckart theorem' },
       { id:'qm_ps4', type:'problem', label:'Sakurai 5.1, 5.4, 5.13, 5.17, 5.32 — PT corrections, Stark, helium variational, Fermi\'s golden rule' },
-      { id:'qm_ps5', type:'problem', label:'Sakurai 6.1, 6.4 — Born approximation: Yukawa & Coulomb cross-sections' },
-      { id:'qm_ms1', type:'milestone', label:'⚡ Milestone: Full H fine structure — relativistic + spin-orbit + Darwin — all three in one session' },
-      { id:'qm_ms2', type:'milestone', label:'⚡ Milestone: Dirac equation — derive γ-algebra, write free-particle spinors u(p), v(p) from scratch' },
+      { id:'qm_ps5', type:'problem', label:'Sakurai 6.1, 6.4 — Born approximation cross-sections: Yukawa potential & Coulomb' },
+      { id:'qm_ms1', type:'milestone', label:'⚡ Milestone: Full hydrogen fine structure — relativistic + spin-orbit + Darwin — all three in one session' },
+      { id:'qm_ms2', type:'milestone', label:'⚡ Milestone: Dirac equation — derive γ-algebra, write free-particle spinors u(p) and v(p) from scratch' },
     ]
   },
   {
-    id: 'geo', phase: 'Phase III', title: 'Geometry & Relativity',
-    weeks: 'Weeks 17–20', subtitle: 'Math Infrastructure · Carroll + Wald',
+    id: 'geo',
+    phase: 'Phase III',
+    title: 'Geometry & Relativity',
+    weeks: 'Weeks 17–20',
+    subtitle: 'Math Infrastructure · Carroll + Wald',
     items: [
-      { id:'geo_r1', type:'reading', label:'Carroll Ch. 1–2: SR, Minkowski metric, manifolds, tangent spaces, differential forms' },
-      { id:'geo_r2', type:'reading', label:'Carroll Ch. 3: Covariant derivative (metric compat. + torsion-free → Γ), Riemann tensor, Bianchi' },
+      { id:'geo_r1', type:'reading', label:'Carroll Ch. 1–2: SR review, Minkowski metric, manifolds, tangent spaces, differential forms' },
+      { id:'geo_r2', type:'reading', label:'Carroll Ch. 3: Covariant derivative (metric compatibility + torsion-free → Γ), Riemann tensor, Bianchi' },
       { id:'geo_r3', type:'reading', label:'Carroll Ch. 4 §1–2: Einstein\'s equation — orientation read only' },
       { id:'geo_r4', type:'reading', label:'Wald Appendix A–B: Abstract index notation, mathematical infrastructure' },
-      { id:'geo_ps1', type:'problem', label:'Index gymnastics sprint — 8 tensor identity proofs timed at 10 min each' },
-      { id:'geo_ps2', type:'problem', label:'Christoffel symbols: 2-sphere metric — derive all Γ by hand' },
-      { id:'geo_ps3', type:'problem', label:'Christoffel symbols: Schwarzschild metric — full calculation by hand (Type A block)' },
-      { id:'geo_ps4', type:'problem', label:'Riemann tensor for Schwarzschild — compute R^ρ_{σμν}, verify R_μν = 0 (vacuum)' },
-      { id:'geo_ps5', type:'problem', label:'Killing equation: derive, find all Killing vectors for Minkowski and S²' },
-      { id:'geo_ps6', type:'problem', label:'Parallel transport: vector around loop on S², verify Berry phase interpretation' },
-      { id:'geo_ms1', type:'milestone', label:'⚡ Milestone: Derive EFE from δS_EH/δg^μν = 0 — vary √(−g) R, handle Gibbons-Hawking term' },
+      { id:'geo_ps1', type:'problem', label:'Index gymnastics sprint — 8 tensor identity proofs timed at 10 min each (trace of g, Bianchi in components, etc.)' },
+      { id:'geo_ps2', type:'problem', label:'Christoffel symbols: 2-sphere (S²) metric — derive all Γ by hand' },
+      { id:'geo_ps3', type:'problem', label:'Christoffel symbols: Schwarzschild metric — full calculation by hand (budget 3 hrs Type A block)' },
+      { id:'geo_ps4', type:'problem', label:'Riemann tensor for Schwarzschild — compute and verify R_μν = 0 (vacuum solution)' },
+      { id:'geo_ps5', type:'problem', label:'Killing equation: derive, then find all Killing vectors for Minkowski and S²' },
+      { id:'geo_ps6', type:'problem', label:'Parallel transport: vector around loop on S², verify geometric phase result' },
+      { id:'geo_ms1', type:'milestone', label:'⚡ Milestone: Derive EFE from Einstein-Hilbert action — vary √(−g) R w.r.t. g^μν, handle boundary terms' },
     ]
   },
   {
-    id: 'mod4', phase: 'Module 4', title: 'Quantum Field Theory',
-    weeks: 'Weeks 21–34', subtitle: 'Peskin & Schroeder (primary) + Srednicki (path integrals)',
+    id: 'mod4',
+    phase: 'Module 4',
+    title: 'Quantum Field Theory',
+    weeks: 'Weeks 21–34',
+    subtitle: 'Peskin & Schroeder (primary) + Srednicki (path integrals)',
     items: [
       { id:'qft_r1', type:'reading', label:'P&S Ch. 2: Klein-Gordon field, canonical quantization, [φ,π]=iδ³, Feynman propagator' },
       { id:'qft_r2', type:'reading', label:'P&S Ch. 3: Dirac field, Lagrangian, canonical quantization, C·P·T discrete symmetries' },
       { id:'qft_r3', type:'reading', label:'P&S Ch. 4: Interaction picture, Dyson series, Wick\'s theorem, Feynman diagrams' },
       { id:'qft_r4', type:'reading', label:'P&S Ch. 5: Elementary QED processes, Feynman rules for QED' },
-      { id:'qft_r5', type:'reading', label:'P&S Ch. 6–7: Radiative corrections, one-loop integrals, Pauli-Villars, Ward identity' },
-      { id:'qft_r6', type:'reading', label:'Srednicki Ch. 6–9: Path integral formulation, generating functional Z[J], 1PI effective action' },
-      { id:'qft_r7', type:'reading', label:'P&S Ch. 10–12: Renormalized PT, Wilsonian RG, Callan-Symanzik equation' },
-      { id:'qft_r8', type:'reading', label:'P&S Ch. 15–16: Yang-Mills, Faddeev-Popov procedure, BRST symmetry' },
-      { id:'qft_ps1',  type:'problem', label:'P&S 2.1–2.4 — KG quantization, normal ordering, Fock space, propagator contour' },
-      { id:'qft_ps2',  type:'problem', label:'P&S 3.1–3.5 — Dirac field, γ-matrix trace identities (all standard traces)' },
-      { id:'qft_ps3',  type:'problem', label:'P&S 4.1–4.3 — Wick contractions for φ⁴, Feynman rules, symmetry factor counting' },
-      { id:'qft_ps4',  type:'problem', label:'P&S 5.1, 5.3 — e⁺e⁻ → μ⁺μ⁻: amplitude → spin sums → |M|² → cross-section' },
-      { id:'qft_ps5',  type:'problem', label:'P&S 5.5 — Compton scattering: both diagrams, trace tech, full dσ/dΩ in CM frame' },
-      { id:'qft_ps6',  type:'problem', label:'P&S 6.1–6.2 — One-loop electron self-energy Σ(p̸): Feynman param → Wick rotate → poles' },
-      { id:'qft_ps7',  type:'problem', label:'P&S 7.1–7.2 — Dim. reg. (d=4−ε), vacuum polarization Π(q²), verify Z₁=Z₂' },
-      { id:'qft_ps8',  type:'problem', label:'Srednicki Ch. 6–9 — Derive Z[J] for free scalar, verify Wick\'s theorem by functional diff.' },
+      { id:'qft_r5', type:'reading', label:'P&S Ch. 6–7: Radiative corrections, one-loop integrals, Pauli-Villars, Ward identity Z₁=Z₂' },
+      { id:'qft_r6', type:'reading', label:'Srednicki Ch. 6–9: Path integral formulation, generating functional Z[J], W[J], 1PI effective action Γ' },
+      { id:'qft_r7', type:'reading', label:'P&S Ch. 10–12: Renormalized perturbation theory, Wilsonian RG, Callan-Symanzik equation' },
+      { id:'qft_r8', type:'reading', label:'P&S Ch. 15–16: Yang-Mills Lagrangian, Faddeev-Popov procedure, BRST symmetry' },
+      { id:'qft_ps1',  type:'problem', label:'P&S 2.1–2.4 — KG quantization, normal ordering, Fock space, propagator as contour integral' },
+      { id:'qft_ps2',  type:'problem', label:'P&S 3.1–3.5 — Dirac field, γ-matrix identities, trace technology (all standard traces memorized)' },
+      { id:'qft_ps3',  type:'problem', label:'P&S 4.1–4.3 — Wick contractions for φ⁴, Feynman rules from scratch, symmetry factor counting' },
+      { id:'qft_ps4',  type:'problem', label:'P&S 5.1, 5.3 — e⁺e⁻ → μ⁺μ⁻: write amplitude → spin sums → |M|² → cross-section → verify σ ∝ α²/E²' },
+      { id:'qft_ps5',  type:'problem', label:'P&S 5.5 — Compton scattering: both diagrams (s + u channel), trace tech, full dσ/dΩ in CM frame' },
+      { id:'qft_ps6',  type:'problem', label:'P&S 6.1–6.2 — One-loop electron self-energy Σ(p̸): Feynman param. → Wick rotate → extract poles' },
+      { id:'qft_ps7',  type:'problem', label:'P&S 7.1–7.2 — Dim. reg. (d=4−ε), vacuum polarization Π(q²), verify Ward-Takahashi Z₁=Z₂' },
+      { id:'qft_ps8',  type:'problem', label:'Srednicki Ch. 6–9 — Derive Z[J] for free scalar, compute ⟨φφφφ⟩ by functional differentiation' },
       { id:'qft_ps9',  type:'problem', label:'P&S 9.1–9.4 — Faddeev-Popov for Abelian + non-Abelian, ghost Lagrangian for Yang-Mills' },
-      { id:'qft_ps10', type:'problem', label:'P&S 12.1–12.2 — β(λ) for φ⁴ and β(e) for QED, solve Callan-Symanzik equation' },
-      { id:'qft_ps11', type:'problem', label:'P&S 15.1–15.2 — Yang-Mills Feynman rules: 3-gluon & 4-gluon vertices, BRST nilpotency' },
-      { id:'qft_ms1', type:'milestone', label:'⚡ Milestone: Compton scattering — both diagrams → Feynman rules → |M|² → dσ/dΩ — no notes, timed' },
-      { id:'qft_ms2', type:'milestone', label:'⚡ Milestone: Derive β(e) = e³/12π² from Π(q²) — verify with Callan-Symanzik, interpret UV flow' },
+      { id:'qft_ps10', type:'problem', label:'P&S 12.1–12.2 — Compute β(λ) for φ⁴, β(e) for QED from Π(q²), solve Callan-Symanzik equation' },
+      { id:'qft_ps11', type:'problem', label:'P&S 15.1–15.2 — Yang-Mills: 3-gluon & 4-gluon Feynman rules, BRST nilpotency (δ²_BRST = 0)' },
+      { id:'qft_ms1', type:'milestone', label:'⚡ Milestone: Compton scattering — both diagrams → Feynman rules → trace tech → |M|² → dσ/dΩ — no notes, timed' },
+      { id:'qft_ms2', type:'milestone', label:'⚡ Milestone: QED β-function — derive β(e) = e³/12π² from Π(q²), verify with Callan-Symanzik, interpret UV flow' },
     ]
   },
   {
-    id: 'mod3', phase: 'Module 3', title: 'General Relativity',
-    weeks: 'Weeks 30–39', subtitle: 'Wald (rigor) + Carroll (problem sets) · Parallel with late QFT',
+    id: 'mod3',
+    phase: 'Module 3',
+    title: 'General Relativity',
+    weeks: 'Weeks 30–39',
+    subtitle: 'Wald (rigor) + Carroll (problem sets) · Parallel with late QFT',
     items: [
       { id:'gr_r1', type:'reading', label:'Wald Ch. 1–3: Manifolds, tensor fields, covariant derivative, abstract index notation' },
       { id:'gr_r2', type:'reading', label:'Wald Ch. 4: Einstein\'s equation, derivation from action, stress-energy tensor' },
       { id:'gr_r3', type:'reading', label:'Wald Ch. 5–6: Schwarzschild & Reissner-Nordström exact solutions' },
-      { id:'gr_r4', type:'reading', label:'Wald Ch. 7: Singularities, Penrose-Carter diagrams, Kruskal extension' },
-      { id:'gr_r5', type:'reading', label:'Wald Ch. 10: Linearized gravity, h_μν perturbation, TT gauge, gravitational waves' },
+      { id:'gr_r4', type:'reading', label:'Wald Ch. 7: Singularities, Penrose-Carter diagrams, geodesic completeness' },
+      { id:'gr_r5', type:'reading', label:'Wald Ch. 10: Linearized gravity — h_μν perturbation, Lorenz gauge, gravitational waves, TT gauge' },
       { id:'gr_r6', type:'reading', label:'Wald Ch. 11–12: Causal structure, four laws of black hole mechanics, BH thermodynamics' },
       { id:'gr_r7', type:'reading', label:'Carroll Ch. 8: Cosmology — FRW metric, Friedmann equations, cosmological eras' },
-      { id:'gr_ps1',  type:'problem', label:'Christoffel symbols: Schwarzschild metric — complete calculation by hand' },
-      { id:'gr_ps2',  type:'problem', label:'Verify R_μν = 0 for Schwarzschild — at least two independent components' },
-      { id:'gr_ps3',  type:'problem', label:'Massive geodesics: effective potential V_eff(r), circular orbits, find r_ISCO' },
-      { id:'gr_ps4',  type:'problem', label:'Null geodesics: light deflection by the Sun — Δφ = 4GM/b (factor-of-2 over Newton)' },
-      { id:'gr_ps5',  type:'problem', label:'Perihelion precession: perturb orbit equation → Δφ = 6πGM/a(1−e²) per orbit' },
-      { id:'gr_ps6',  type:'problem', label:'Kruskal extension: define (T,X), verify metric regular at r=2GM, draw diagram' },
-      { id:'gr_ps7',  type:'problem', label:'Linearized gravity: derive □h̄_μν = −16πG T_μν in Lorenz gauge from linearized EFE' },
-      { id:'gr_ps8',  type:'problem', label:'GW quadrupole formula: P = −G/5⟨Ï_ij Ï^ij⟩ — derive using Isaacson effective T_μν' },
+      { id:'gr_ps1',  type:'problem', label:'Christoffel symbols: Schwarzschild metric — complete calculation by hand (Type A block required)' },
+      { id:'gr_ps2',  type:'problem', label:'Verify R_μν = 0 for Schwarzschild — at least two independent components, from computed Γ values' },
+      { id:'gr_ps3',  type:'problem', label:'Geodesic equation: massive particles — effective potential V_eff(r), circular orbits, find r_ISCO' },
+      { id:'gr_ps4',  type:'problem', label:'Null geodesics: light deflection by the Sun — solve perturbatively, get Δφ = 4GM/b (factor of 2 over Newton)' },
+      { id:'gr_ps5',  type:'problem', label:'Perihelion precession: perturb the orbit equation, derive Δφ = 6πGM/a(1−e²) per orbit' },
+      { id:'gr_ps6',  type:'problem', label:'Kruskal extension: define (T,X) coordinates, verify metric is regular at r=2GM, draw Kruskal diagram' },
+      { id:'gr_ps7',  type:'problem', label:'Linearized gravity: derive wave equation □h̄_μν = −16πG T_μν in Lorenz gauge from linearized EFE' },
+      { id:'gr_ps8',  type:'problem', label:'GW quadrupole formula: P = −G/5 ⟨Ï_ij Ï^ij⟩ — derive using Isaacson effective stress-energy for GWs' },
       { id:'gr_ps9',  type:'problem', label:'Hawking temperature: Euclidean Schwarzschild → periodic imaginary time → T_H = ℏc³/8πGMk_B' },
-      { id:'gr_ps10', type:'problem', label:'Friedmann equations: derive from EFE with FRW metric + perfect fluid T_μν' },
-      { id:'gr_ms1', type:'milestone', label:'⚡ Milestone: Schwarzschild in full — compute all Γ, verify R_μν=0, solve geodesic equation (timed)' },
-      { id:'gr_ms2', type:'milestone', label:'⚡ Milestone: Linearized EFE in Lorenz gauge, TT conditions, GW energy flux (Isaacson)' },
+      { id:'gr_ps10', type:'problem', label:'Friedmann equations: derive from EFE with FRW metric g_μν and perfect fluid T_μν, identify matter/Λ/rad. solutions' },
+      { id:'gr_ms1', type:'milestone', label:'⚡ Milestone: Schwarzschild in full — compute Γ, verify R_μν = 0, solve circular orbit geodesics — timed' },
+      { id:'gr_ms2', type:'milestone', label:'⚡ Milestone: Linearized GR — derive wave equation in Lorenz gauge, state TT conditions, write GW energy flux (Isaacson)' },
     ]
   },
   {
-    id: 'eft', phase: 'Phase V', title: 'EFT for Gravity',
-    weeks: 'Weeks 40–45', subtitle: 'Burgess + Donoghue — The Endgame',
+    id: 'eft',
+    phase: 'Phase V',
+    title: 'EFT for Gravity',
+    weeks: 'Weeks 40–45',
+    subtitle: 'Burgess + Donoghue — The Endgame',
     items: [
-      { id:'eft_r1', type:'reading', label:'Burgess Ch. 1–3: EFT philosophy, Wilsonian action, operator expansion, matching' },
+      { id:'eft_r1', type:'reading', label:'Burgess Ch. 1–3: EFT philosophy, Wilsonian action, operator expansion, matching calculations' },
       { id:'eft_r2', type:'reading', label:'Burgess Ch. 4–5: Systematic loop expansion in EFTs, power counting rules for gravity' },
-      { id:'eft_r3', type:'reading', label:'Donoghue PRD (1994) §I–III: GR as EFT — S_EFT operator structure' },
+      { id:'eft_r3', type:'reading', label:'Donoghue PRD (1994) §I–III: GR as EFT — leading operator structure of S_EFT' },
       { id:'eft_r4', type:'reading', label:'Donoghue PRD (1994) §IV–V: One-loop corrections, non-analytic contributions to V(r)' },
-      { id:'eft_r5', type:'reading', label:'Donoghue AIP (2012): EFT treatment of quantum gravity — accessible review' },
+      { id:'eft_r5', type:'reading', label:'Donoghue AIP (2012): EFT treatment of quantum gravity — accessible review article' },
       { id:'eft_r6', type:'reading', label:'Burgess Living Reviews (2004): Quantum gravity as EFT — comprehensive reference' },
       { id:'eft_r7', type:'reading', label:'Goldberger & Rothstein (2004) §I–III: NRGR — EFT for inspiraling binary systems' },
       { id:'eft_ps1', type:'problem', label:'Power counting: identify relevant/marginal/irrelevant operators in φ⁴ with cutoff Λ' },
-      { id:'eft_ps2', type:'problem', label:'Matching: integrate out heavy scalar at one loop — identify all induced operators' },
+      { id:'eft_ps2', type:'problem', label:'Matching: integrate out heavy scalar coupled to light scalar at one loop — identify induced operators' },
       { id:'eft_ps3', type:'problem', label:'Graviton propagator: expand S_EH to O(h²), extract propagator in harmonic gauge' },
-      { id:'eft_ps4', type:'problem', label:'Higher-derivative ops: show R² and R_μν R^μν are independent; verify Gauss-Bonnet is topological' },
-      { id:'eft_ps5', type:'problem', label:'Donoghue result: reproduce non-analytic q²log q² integral → quantum correction to V(r)' },
-      { id:'eft_ps6', type:'problem', label:'Perturbativity breakdown: derive E_breakdown ~ M_Pl from loop power counting' },
+      { id:'eft_ps4', type:'problem', label:'Higher-derivative ops: show R² and R_μν R^μν are independent; verify Gauss-Bonnet = R² − 4R_μν R^μν + R_αβγδ R^αβγδ is topological' },
+      { id:'eft_ps5', type:'problem', label:'Donoghue result: reproduce non-analytic q²log q² integral → quantum correction 1/r³ to V(r)' },
+      { id:'eft_ps6', type:'problem', label:'Perturbativity breakdown: derive E_breakdown ~ M_Pl from loop power counting (when do loops become O(1)?)' },
       { id:'eft_ps7', type:'problem', label:'NRGR: leading post-Newtonian correction to binary potential — tree-level graviton exchange' },
-      { id:'eft_ms1', type:'milestone', label:'⚡ FINAL MILESTONE: Write next-to-leading EFT Lagrangian for gravity · Power count quantum correction · Reproduce Donoghue V(r) from memory' },
+      { id:'eft_ms1', type:'milestone', label:'⚡ FINAL MILESTONE: Write next-to-leading-order EFT Lagrangian for gravity · Power count quantum correction to V(r) · Reproduce Donoghue result from memory — no notes' },
     ]
   },
 ];
 
 /* ────────────────────────────────────────────────
-   STORAGE
+   STORAGE HELPERS
    ──────────────────────────────────────────────── */
+const LS_DAILY = 'u1730_daily_';
+const LS_CURR  = 'u1730_curr_';
+
 const store = {
-  getDaily: (day, id)      => localStorage.getItem(`u1730_d_${day}_${id}`) === 'true',
-  setDaily: (day, id, val) => localStorage.setItem(`u1730_d_${day}_${id}`, val),
-  getCurr:  (id)           => localStorage.getItem(`u1730_c_${id}`) === 'true',
-  setCurr:  (id, val)      => localStorage.setItem(`u1730_c_${id}`, val),
+  getDaily: (day, id)      => localStorage.getItem(`${LS_DAILY}${day}_${id}`) === 'true',
+  setDaily: (day, id, val) => localStorage.setItem(`${LS_DAILY}${day}_${id}`, val),
+  getCurr:  (id)           => localStorage.getItem(`${LS_CURR}${id}`) === 'true',
+  setCurr:  (id, val)      => localStorage.setItem(`${LS_CURR}${id}`, val),
   resetDay: (day) => {
     Object.keys(localStorage)
-      .filter(k => k.startsWith(`u1730_d_${day}_`))
+      .filter(k => k.startsWith(`${LS_DAILY}${day}_`))
       .forEach(k => localStorage.removeItem(k));
   },
 };
@@ -238,16 +273,16 @@ const store = {
 /* ────────────────────────────────────────────────
    STATE
    ──────────────────────────────────────────────── */
-let selectedDay = new Date().getDay();
+let selectedDay = new Date().getDay(); // 0–6
 
 /* ────────────────────────────────────────────────
    HEADER
    ──────────────────────────────────────────────── */
 function initHeader() {
-  const now  = new Date();
+  const now = new Date();
   const opts = { weekday:'short', month:'short', day:'numeric', year:'numeric' };
-  document.getElementById('header-date').textContent =
-    now.toLocaleDateString('en-US', opts).toUpperCase().replace(',', '');
+  const str = now.toLocaleDateString('en-US', opts).toUpperCase().replace(',','');
+  document.getElementById('header-date').textContent = str;
 }
 
 /* ────────────────────────────────────────────────
@@ -261,21 +296,22 @@ function switchView(name) {
 }
 
 /* ────────────────────────────────────────────────
-   CALENDAR
+   CALENDAR — build task list for a given day index
    ──────────────────────────────────────────────── */
 function buildTaskList(dayIdx) {
   const isWeekend = (dayIdx === 0 || dayIdx === 6);
-  return [
-    ...(isWeekend ? WEEKEND_FIXED : WEEKDAY_FIXED),
-    ...(EVENING[dayIdx] || []),
-  ];
+  const base = isWeekend ? [...WEEKEND_FIXED] : [...WEEKDAY_FIXED];
+  const evening = EVENING[dayIdx] ? [...EVENING[dayIdx]] : [];
+  return [...base, ...evening];
 }
 
 function makeTaskCard(task, dayIdx) {
   const checked = store.getDaily(dayIdx, task.id);
+
   const card = document.createElement('div');
   card.className = `task-card${checked ? ' completed' : ''}`;
 
+  // Session badge
   let badge = '';
   if (task.session) {
     badge = `<div class="session-badge sb-${task.session.toLowerCase()}">SESSION TYPE ${task.session}</div>`;
@@ -303,41 +339,70 @@ function makeTaskCard(task, dayIdx) {
 }
 
 function renderCalendar() {
-  const wrap    = document.getElementById('timeline-wrap');
-  const todayIdx = new Date().getDay();
+  const wrap = document.getElementById('timeline-wrap');
   wrap.innerHTML = '';
 
+  // Update day selector display
+  const today = new Date();
+  const todayIdx = today.getDay();
   document.getElementById('day-name').textContent = DAY_SHORT[selectedDay];
-  document.getElementById('day-sub').textContent  =
-    selectedDay === todayIdx ? 'TODAY' : DAY_NAMES[selectedDay].toUpperCase();
 
-  const tasks  = buildTaskList(selectedDay);
-  const groups = { morning:[], afternoon:[], evening:[], study:[] };
-  tasks.forEach(t => { (groups[t.section] || groups.study).push(t); });
+  if (selectedDay === todayIdx) {
+    document.getElementById('day-sub').textContent = 'TODAY';
+  } else {
+    // Show the nearest occurrence of that day of week for a date hint
+    const d = new Date(today);
+    let diff = selectedDay - todayIdx;
+    if (diff < 0) diff += 7;
+    if (diff > 3) diff -= 7; // prefer nearest (could be past)
+    d.setDate(today.getDate() + diff);
+    document.getElementById('day-sub').textContent =
+      d.toLocaleDateString('en-US', { month:'short', day:'numeric' }).toUpperCase();
+  }
 
-  const labels = { morning:'MORNING', afternoon:'AFTERNOON', evening:'EVENING', study:'STUDY BLOCK' };
+  const tasks = buildTaskList(selectedDay);
+
+  // Group by section
+  const groups = { morning: [], afternoon: [], evening: [], study: [] };
+  tasks.forEach(t => {
+    if (groups[t.section]) groups[t.section].push(t);
+    else groups.study.push(t);
+  });
+
+  const labels = {
+    morning: 'MORNING',
+    afternoon: 'AFTERNOON',
+    evening: 'EVENING',
+    study: 'STUDY BLOCK',
+  };
 
   ['morning','afternoon','evening','study'].forEach(sec => {
     const items = groups[sec];
-    if (!items.length) return;
+    if (!items || items.length === 0) return;
 
     const head = document.createElement('div');
     head.className = 'section-head';
-    head.innerHTML = `<span class="section-label">${labels[sec]}</span><div class="section-rule"></div>`;
+    head.innerHTML = `
+      <span class="section-label">${labels[sec]}</span>
+      <div class="section-rule"></div>
+    `;
     wrap.appendChild(head);
+
     items.forEach(task => wrap.appendChild(makeTaskCard(task, selectedDay)));
   });
 }
 
 /* ────────────────────────────────────────────────
-   CURRICULUM
+   CURRICULUM — accordion + progress
    ──────────────────────────────────────────────── */
 function getCurrProgress() {
   let total = 0, done = 0;
-  CURRICULUM.forEach(mod => mod.items.forEach(item => {
-    total++;
-    if (store.getCurr(item.id)) done++;
-  }));
+  CURRICULUM.forEach(mod => {
+    mod.items.forEach(item => {
+      total++;
+      if (store.getCurr(item.id)) done++;
+    });
+  });
   return { total, done };
 }
 
@@ -356,42 +421,50 @@ function updateProgressUI() {
 
   const bar = document.getElementById('prog-bar');
   bar.style.width = `${pct}%`;
+  // Show glowing dot only when there's something to show
   bar.classList.toggle('show-dot', pct > 0);
 
-  // Show current active phase
-  let label = 'Phase V — EFT for Gravity';
+  // Current phase label — find first incomplete module
+  let phaseLabel = 'Phase V — EFT for Gravity';
   for (const mod of CURRICULUM) {
     const { total: t, done: d } = getModProgress(mod);
-    if (d < t) { label = `${mod.phase} — ${mod.title}`; break; }
+    if (d < t) { phaseLabel = `${mod.phase} — ${mod.title}`; break; }
   }
-  document.getElementById('prog-phase').textContent = label;
+  document.getElementById('prog-phase').textContent = phaseLabel;
 }
 
-const ICONS = {
-  reading:  `<svg class="sub-group-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
-  problem:  `<svg class="sub-group-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+/* SVG icons for sub-group headers */
+const ICON = {
+  reading: `<svg class="sub-group-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+  problem: `<svg class="sub-group-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
   milestone:`<svg class="sub-group-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>`,
 };
 
 function buildGroupHtml(items, type, modId) {
   if (!items.length) return '';
-  const label = { reading:'Readings', problem:'Problem Sets', milestone:'Milestones' }[type];
+  const typeLabel = { reading:'Readings', problem:'Problem Sets', milestone:'Milestones' }[type];
+
   const rows = items.map(item => {
-    const checked     = store.getCurr(item.id);
+    const checked = store.getCurr(item.id);
     const isMilestone = item.type === 'milestone';
     return `
       <label class="curr-item${isMilestone ? ' is-milestone' : ''}${checked ? ' done' : ''}" for="ci-${item.id}">
-        <input type="checkbox" class="curr-cb type-${item.type}" id="ci-${item.id}"
-          data-id="${item.id}" data-mod="${modId}"${checked ? ' checked' : ''}>
+        <input type="checkbox"
+          class="curr-cb type-${item.type}"
+          id="ci-${item.id}"
+          data-id="${item.id}"
+          data-mod="${modId}"
+          ${checked ? 'checked' : ''}>
         <span class="curr-item-text">${item.label}</span>
       </label>`;
   }).join('');
 
   return `
     <div class="sub-group-head">
-      ${ICONS[type]}
-      <span class="sub-group-label">${label}</span>
-    </div>${rows}`;
+      ${ICON[type]}
+      <span class="sub-group-label">${typeLabel}</span>
+    </div>
+    ${rows}`;
 }
 
 function renderCurriculum() {
@@ -400,12 +473,14 @@ function renderCurriculum() {
 
   CURRICULUM.forEach(mod => {
     const { total, done } = getModProgress(mod);
-    const readings   = mod.items.filter(i => i.type === 'reading');
-    const problems   = mod.items.filter(i => i.type === 'problem');
-    const milestones = mod.items.filter(i => i.type === 'milestone');
+
+    const readings  = mod.items.filter(i => i.type === 'reading');
+    const problems  = mod.items.filter(i => i.type === 'problem');
+    const milestones= mod.items.filter(i => i.type === 'milestone');
 
     const block = document.createElement('div');
     block.className = 'mod-block';
+    block.id = `mb-${mod.id}`;
     block.innerHTML = `
       <div class="mod-header" role="button" aria-expanded="false">
         <div class="mod-phase">${mod.phase.toUpperCase()}</div>
@@ -424,28 +499,37 @@ function renderCurriculum() {
         </div>
       </div>
       <div class="mod-body">
-        ${buildGroupHtml(readings,   'reading',   mod.id)}
-        ${buildGroupHtml(problems,   'problem',   mod.id)}
+        ${buildGroupHtml(readings, 'reading', mod.id)}
+        ${buildGroupHtml(problems, 'problem', mod.id)}
         ${buildGroupHtml(milestones, 'milestone', mod.id)}
-      </div>`;
+      </div>
+    `;
 
-    block.querySelector('.mod-header').addEventListener('click', () => {
+    // Accordion toggle
+    const header = block.querySelector('.mod-header');
+    header.addEventListener('click', () => {
       const open = block.classList.toggle('open');
-      block.querySelector('.mod-header').setAttribute('aria-expanded', String(open));
+      header.setAttribute('aria-expanded', String(open));
     });
 
     list.appendChild(block);
   });
 
-  // Delegated change handler for all curriculum checkboxes
+  // Checkbox change handlers (delegated via event on list)
   list.addEventListener('change', e => {
     const cb = e.target.closest('.curr-cb');
     if (!cb) return;
 
-    const { id, mod: modId } = cb.dataset;
-    store.setCurr(id, cb.checked);
-    cb.closest('.curr-item').classList.toggle('done', cb.checked);
+    const id    = cb.dataset.id;
+    const modId = cb.dataset.mod;
 
+    store.setCurr(id, cb.checked);
+
+    // Toggle done class on label
+    const label = cb.closest('.curr-item');
+    if (label) label.classList.toggle('done', cb.checked);
+
+    // Update this module's progress mini count
     const mod = CURRICULUM.find(m => m.id === modId);
     if (mod) {
       const { total, done } = getModProgress(mod);
@@ -463,9 +547,11 @@ function renderCurriculum() {
    EVENT LISTENERS
    ──────────────────────────────────────────────── */
 function attachListeners() {
+  // Bottom nav
   document.getElementById('nav-calendar').addEventListener('click', () => switchView('calendar'));
-  document.getElementById('nav-plan').addEventListener('click',     () => switchView('plan'));
+  document.getElementById('nav-plan').addEventListener('click', () => switchView('plan'));
 
+  // Day navigation (wraps 0–6)
   document.getElementById('btn-prev-day').addEventListener('click', () => {
     selectedDay = (selectedDay + 6) % 7;
     renderCalendar();
@@ -475,6 +561,7 @@ function attachListeners() {
     renderCalendar();
   });
 
+  // Reset daily tasks for selected day
   document.getElementById('btn-reset-daily').addEventListener('click', () => {
     if (!confirm(`Reset all tasks for ${DAY_NAMES[selectedDay]}?`)) return;
     store.resetDay(selectedDay);
@@ -485,9 +572,11 @@ function attachListeners() {
 /* ────────────────────────────────────────────────
    INIT
    ──────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
+function init() {
   initHeader();
   attachListeners();
   renderCalendar();
   renderCurriculum();
-});
+}
+
+document.addEventListener('DOMContentLoaded', init);
