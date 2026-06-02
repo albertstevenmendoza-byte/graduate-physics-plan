@@ -1,42 +1,8 @@
 /* ══════════════════════════════════════════════════
    UNIT 1730 — Physics Tracker · app.js
+   Views: Curriculum + Problem Sets
    ══════════════════════════════════════════════════ */
 'use strict';
-
-/* ────────────────────────────────────────────────
-   DATA: Daily Schedule
-   ──────────────────────────────────────────────── */
-const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const DAY_SHORT = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
-
-const WEEKDAY_FIXED = [
-  { id:'work',     section:'morning',   time:'6:00 AM – 3:30 PM', label:'Work Shift',       sub:'Novus Foods · Plant 1730 · Inventory Control Lead', type:'work' },
-  { id:'family',   section:'afternoon', time:'3:30 PM – 4:30 PM', label:'Family Time',       sub:'Home arrival · decompress · Patty & daughter',      type:'family' },
-  { id:'exercise', section:'afternoon', time:'4:30 PM – 5:30 PM', label:'Strength Training', sub:'1-hour exercise block',                              type:'exercise' },
-  { id:'dinner',   section:'afternoon', time:'5:30 PM – 6:00 PM', label:'Dinner',            sub:'',                                                   type:'dinner' },
-];
-const WEEKEND_FIXED = [
-  { id:'exercise_wknd', section:'morning', time:'~ Morning', label:'Exercise',        sub:'1-hour workout',                               type:'exercise' },
-  { id:'family_wknd',   section:'morning', time:'Ongoing',   label:'Family Priority', sub:'Primary weekend focus — Patty & daughter',     type:'family' },
-];
-const EVENING = {
-  0: [{ id:'study_sun', section:'study', time:'Morning or downtime', label:'Type A — Heavy Calc Block', sub:'GR / QFT deep calculations · ~2.5 hrs', type:'study', session:'A' }],
-  1: [
-    { id:'baseball_mon', section:'evening', time:'6:00 PM – 8:00 PM', label:"Daughter's Baseball", sub:'Priority family event', type:'event' },
-    { id:'study_mon',    section:'evening', time:'8:15 PM onward',     label:'Type C — Problem Grinding', sub:'Continue ongoing problem set · ~1.75 hrs', type:'study', session:'C' },
-  ],
-  2: [{ id:'study_tue', section:'evening', time:'6:00 PM onward', label:'Type B — New Material + Launch', sub:'Read chapter section · start new problems · ~2.5 hrs', type:'study', session:'B' }],
-  3: [
-    { id:'baseball_wed', section:'evening', time:'6:00 PM – 7:00 PM', label:"Daughter's Baseball", sub:'Priority family event', type:'event' },
-    { id:'study_wed',    section:'evening', time:'7:15 PM onward',     label:'Type C — Problem Grinding', sub:'Continue problem set · ~1.75 hrs', type:'study', session:'C' },
-  ],
-  4: [
-    { id:'baseball_thu', section:'evening', time:'6:00 PM – 8:00 PM', label:"Daughter's Baseball", sub:'Most weeks — confirm schedule', type:'event' },
-    { id:'study_thu',    section:'evening', time:'8:15 PM onward',     label:'Type C — Problem Grinding', sub:'Finish set / timed derivation drill · ~1.5 hrs', type:'study', session:'C' },
-  ],
-  5: [{ id:'study_fri', section:'evening', time:'6:00 PM onward', label:'Type D — Flex Block', sub:'Review · synthesis · or family time · 0–1.5 hrs', type:'study', session:'D' }],
-  6: [{ id:'study_sat', section:'study', time:'Morning / Downtime', label:'Type A — Heavy Calc Block', sub:'Primary weekend calculation session · ~3 hrs', type:'study', session:'A' }],
-};
 
 /* ────────────────────────────────────────────────
    DATA: Curriculum
@@ -747,21 +713,15 @@ const PROBLEM_SETS = [
    STORAGE
    ──────────────────────────────────────────────── */
 const store = {
-  getDaily: (day, id)      => localStorage.getItem(`u1730_d_${day}_${id}`) === 'true',
-  setDaily: (day, id, val) => localStorage.setItem(`u1730_d_${day}_${id}`, val),
-  getCurr:  (id)           => localStorage.getItem(`u1730_c_${id}`) === 'true',
-  setCurr:  (id, val)      => localStorage.setItem(`u1730_c_${id}`, val),
-  getProb:  (id)           => localStorage.getItem(`u1730_p_${id}`) === 'true',
-  setProb:  (id, val)      => localStorage.setItem(`u1730_p_${id}`, val),
-  resetDay: (day) => {
-    Object.keys(localStorage).filter(k => k.startsWith(`u1730_d_${day}_`)).forEach(k => localStorage.removeItem(k));
-  },
+  getCurr:  (id)       => localStorage.getItem(`u1730_c_${id}`) === 'true',
+  setCurr:  (id, val)  => localStorage.setItem(`u1730_c_${id}`, val),
+  getProb:  (id)       => localStorage.getItem(`u1730_p_${id}`) === 'true',
+  setProb:  (id, val)  => localStorage.setItem(`u1730_p_${id}`, val),
 };
 
 /* ────────────────────────────────────────────────
    STATE
    ──────────────────────────────────────────────── */
-let selectedDay          = new Date().getDay();
 let currentProblemFilter = 'all';
 
 /* ────────────────────────────────────────────────
@@ -794,59 +754,6 @@ function goToProblems(moduleId) {
     const head = document.getElementById(`ps-head-${moduleId}`);
     if (head) head.scrollIntoView({ behavior:'smooth', block:'start' });
   }, 80);
-}
-
-/* ────────────────────────────────────────────────
-   CALENDAR
-   ──────────────────────────────────────────────── */
-function buildTaskList(dayIdx) {
-  const isWeekend = (dayIdx === 0 || dayIdx === 6);
-  return [...(isWeekend ? WEEKEND_FIXED : WEEKDAY_FIXED), ...(EVENING[dayIdx] || [])];
-}
-
-function makeTaskCard(task, dayIdx) {
-  const checked = store.getDaily(dayIdx, task.id);
-  const card = document.createElement('div');
-  card.className = `task-card${checked ? ' completed' : ''}`;
-  let badge = task.session ? `<div class="session-badge sb-${task.session.toLowerCase()}">SESSION TYPE ${task.session}</div>` : '';
-  card.innerHTML = `
-    <div class="task-strip t-${task.type}"></div>
-    <div class="task-body">
-      <div class="task-time">${task.time}</div>
-      <div class="task-label">${task.label}</div>
-      ${task.sub ? `<div class="task-sub">${task.sub}</div>` : ''}
-      ${badge}
-    </div>
-    <label class="task-check-wrap" for="tcb-${task.id}">
-      <input type="checkbox" class="task-cb" id="tcb-${task.id}"${checked ? ' checked' : ''}>
-    </label>`;
-  card.querySelector('.task-cb').addEventListener('change', e => {
-    store.setDaily(dayIdx, task.id, e.target.checked);
-    card.classList.toggle('completed', e.target.checked);
-  });
-  return card;
-}
-
-function renderCalendar() {
-  const wrap     = document.getElementById('timeline-wrap');
-  const todayIdx = new Date().getDay();
-  wrap.innerHTML = '';
-  document.getElementById('day-name').textContent = DAY_SHORT[selectedDay];
-  document.getElementById('day-sub').textContent  =
-    selectedDay === todayIdx ? 'TODAY' : DAY_NAMES[selectedDay].toUpperCase();
-
-  const groups = { morning:[], afternoon:[], evening:[], study:[] };
-  buildTaskList(selectedDay).forEach(t => (groups[t.section] || groups.study).push(t));
-  const labels = { morning:'MORNING', afternoon:'AFTERNOON', evening:'EVENING', study:'STUDY BLOCK' };
-  ['morning','afternoon','evening','study'].forEach(sec => {
-    const items = groups[sec];
-    if (!items.length) return;
-    const head = document.createElement('div');
-    head.className = 'section-head';
-    head.innerHTML = `<span class="section-label">${labels[sec]}</span><div class="section-rule"></div>`;
-    wrap.appendChild(head);
-    items.forEach(task => wrap.appendChild(makeTaskCard(task, selectedDay)));
-  });
 }
 
 /* ────────────────────────────────────────────────
@@ -1060,21 +967,10 @@ function renderProblems() {
    EVENT LISTENERS
    ──────────────────────────────────────────────── */
 function attachListeners() {
-  document.getElementById('nav-calendar').addEventListener('click', () => switchView('calendar'));
   document.getElementById('nav-plan').addEventListener('click',     () => switchView('plan'));
   document.getElementById('nav-problems').addEventListener('click', () => {
     switchView('problems');
     renderProblems();
-  });
-  document.getElementById('btn-prev-day').addEventListener('click', () => {
-    selectedDay = (selectedDay + 6) % 7; renderCalendar();
-  });
-  document.getElementById('btn-next-day').addEventListener('click', () => {
-    selectedDay = (selectedDay + 1) % 7; renderCalendar();
-  });
-  document.getElementById('btn-reset-daily').addEventListener('click', () => {
-    if (!confirm(`Reset all tasks for ${DAY_NAMES[selectedDay]}?`)) return;
-    store.resetDay(selectedDay); renderCalendar();
   });
 }
 
@@ -1084,8 +980,6 @@ function attachListeners() {
 document.addEventListener('DOMContentLoaded', () => {
   initHeader();
   attachListeners();
-  renderCalendar();
   renderCurriculum();
-  // Pre-render problems so it's ready when user taps the tab
   renderProblems();
 });
