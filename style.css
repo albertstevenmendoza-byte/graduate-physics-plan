@@ -836,3 +836,285 @@ body::after {
   .prog-count { font-size: 12px; }
   :root { --sidebar-w: 230px; }
 }
+
+/* ══════════════════════════════════════════════════
+   PROBLEM SETS PAGE — additions to existing styles
+   ══════════════════════════════════════════════════ */
+
+/* ── Filter Tab Bar ────────────────────────────── */
+.ps-filter-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 14px;
+  /* hide scrollbar */
+  scrollbar-width: none;
+}
+.ps-filter-wrap::-webkit-scrollbar { display: none; }
+
+.ps-filters {
+  display: flex;
+  gap: 6px;
+  padding: 0 2px 8px;
+  white-space: nowrap;
+}
+.ps-filter-btn {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.10em;
+  padding: 5px 12px;
+  border-radius: 100px;
+  border: 1px solid var(--border-hi);
+  color: var(--text-dim);
+  background: var(--panel);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+.ps-filter-btn:hover { color: var(--amber); border-color: var(--amber); background: var(--amber-dim); }
+.ps-filter-btn.active { color: var(--amber); border-color: var(--amber); background: var(--amber-dim); box-shadow: none; }
+
+/* ── Problem List Container ────────────────────── */
+.ps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Module group header within problem list */
+.ps-module-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 2px 6px;
+}
+.ps-module-head:first-child { padding-top: 4px; }
+.ps-module-tag {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  background: var(--amber-dim);
+  color: var(--amber);
+  border: 1px solid rgba(181,101,10,0.22);
+  white-space: nowrap;
+}
+.ps-module-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+.ps-module-rule { flex: 1; height: 1px; background: var(--border); }
+
+/* ── Individual Problem Card ───────────────────── */
+.prob-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.prob-card:hover { border-color: var(--border-hi); box-shadow: var(--shadow-md); }
+.prob-card.solved { opacity: 0.65; }
+
+/* Card top row: ref badge + title + solved checkbox */
+.prob-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px 0;
+}
+.prob-ref {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  background: var(--blue-dim);
+  color: var(--blue);
+  border: 1px solid rgba(3,105,161,0.22);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.prob-title-block { flex: 1; min-width: 0; }
+.prob-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-hi);
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+.prob-card.solved .prob-title { text-decoration: line-through; color: var(--text-dim); }
+
+/* Solved checkbox */
+.prob-solved-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.prob-solved-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.prob-cb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  border: 1.5px solid var(--border-hi);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.18s;
+  background: var(--panel);
+}
+.prob-cb:hover { border-color: var(--green); }
+.prob-cb:checked { background: var(--green); border-color: var(--green); }
+.prob-cb:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px; top: 1px;
+  width: 6px; height: 10px;
+  border: 2px solid #fff;
+  border-top: none; border-left: none;
+  transform: rotate(45deg);
+}
+
+/* Problem statement */
+.prob-statement {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text);
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+
+/* Solution toggle button */
+.prob-sol-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  text-align: left;
+  background: var(--surface);
+  border: none;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.prob-sol-toggle:hover { background: var(--panel-hi); }
+.prob-sol-toggle-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--amber);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  flex: 1;
+}
+.prob-sol-toggle-arrow {
+  color: var(--amber);
+  transition: transform 0.22s ease;
+  display: flex;
+}
+.prob-sol-toggle-arrow svg { width: 14px; height: 14px; }
+.prob-sol-toggle.open .prob-sol-toggle-arrow { transform: rotate(180deg); }
+
+/* Solution body — collapsible */
+.prob-sol-body {
+  display: none;
+  padding: 12px 14px 14px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+.prob-sol-body.open { display: block; }
+
+.prob-sol-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  counter-reset: step-counter;
+}
+.prob-sol-steps li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  counter-increment: step-counter;
+}
+.prob-sol-steps li::before {
+  content: counter(step-counter);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--amber);
+  background: var(--amber-dim);
+  border: 1px solid rgba(181,101,10,0.22);
+  border-radius: 4px;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.prob-sol-steps li span {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+/* Curriculum "→ Problems" link button */
+.curr-ps-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  border: 1px solid var(--border-hi);
+  color: var(--text-dim);
+  background: transparent;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  margin-top: 1px;
+}
+.curr-ps-link svg { width: 11px; height: 11px; }
+.curr-ps-link:hover { color: var(--blue); border-color: var(--blue); background: var(--blue-dim); }
+.curr-ps-link:active { transform: scale(0.9); }
+
+/* ── Desktop: 3 nav items still fit ─────────────── */
+@media (min-width: 768px) {
+  .ps-filters { padding-bottom: 4px; }
+  .prob-title { font-size: 17px; }
+  .prob-statement { font-size: 13.5px; padding: 12px 16px; }
+  .prob-top { padding: 14px 16px 0; }
+  .prob-sol-toggle { padding: 10px 16px; }
+  .prob-sol-body { padding: 14px 16px 16px; }
+  .prob-sol-steps li span { font-size: 13px; }
+}
+
+@media (min-width: 1100px) {
+  /* On large desktop, problem cards go two-column */
+  .ps-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  /* Module headers span both columns */
+  .ps-module-head { grid-column: 1 / -1; }
+}
