@@ -1,107 +1,809 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#e9e4db">
-  <title>Physics Review Plan</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&family=Nunito:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QFT Readiness Program — Progress Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,500;1,600&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#080b0f;
+    --panel:#0d1319;
+    --panel-2:#121a22;
+    --border:#1d2830;
+    --border-soft:#161f27;
+    --text:#e8edf0;
+    --text-dim:#8a97a1;
+    --text-faint:#4d5960;
+    --signal:#39b54a;
+    --signal-soft:rgba(57,181,74,0.12);
+    --signal-dim:#1f6b30;
+    --amber:#d9a441;
+    --amber-soft:rgba(217,164,65,0.10);
+    --radius:10px;
+    --serif:'Newsreader', Georgia, serif;
+    --mono:'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{transition:none !important; animation:none !important;}
+  }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--signal);}
+  #app{max-width:920px; margin:0 auto; padding:0 20px 80px;}
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:20;
+    background:rgba(8,11,15,0.92);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:14px 0;
+    margin:0 -20px 0;
+  }
+  .topbar-inner{max-width:920px; margin:0 auto; padding:0 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  .brand{font-family:var(--mono); font-size:12px; letter-spacing:0.08em; color:var(--text-dim); text-transform:uppercase; white-space:nowrap;}
+  .progress-shell{flex:1; min-width:160px;}
+  .progress-track{height:6px; background:var(--panel-2); border-radius:99px; overflow:hidden; border:1px solid var(--border);}
+  .progress-fill{height:100%; background:linear-gradient(90deg, var(--signal-dim), var(--signal)); width:0%; transition:width .4s ease;}
+  .progress-label{font-family:var(--mono); font-size:11px; color:var(--text-dim); margin-top:5px; display:flex; justify-content:space-between;}
+  .elapsed{font-family:var(--mono); font-size:11px; color:var(--text-faint); white-space:nowrap;}
+
+  /* ---------- Intro ---------- */
+  .intro{padding:40px 0 8px;}
+  .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--signal);}
+  h1{font-family:var(--serif); font-weight:600; font-size:clamp(28px,4vw,38px); margin:10px 0 8px; letter-spacing:-0.01em;}
+  .sub{color:var(--text-dim); font-size:15px; max-width:62ch;}
+  .reset-note{
+    margin-top:18px; padding:14px 16px; border:1px solid var(--border);
+    border-left:3px solid var(--amber); border-radius:6px; background:var(--amber-soft);
+    font-size:13.5px; color:var(--text);
+  }
+  .reset-note b{color:var(--amber);}
+
+  .field-row{display:flex; gap:24px; flex-wrap:wrap; margin-top:22px; align-items:flex-end;}
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim);}
+  .field input[type=date]{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    padding:7px 10px; border-radius:6px; font-family:var(--mono); font-size:13px;
+  }
+
+  /* ---------- Confidence log ---------- */
+  .winlog{margin-top:30px; border:1px solid var(--border); border-radius:var(--radius); background:var(--panel); padding:18px 20px;}
+  .winlog h2{font-family:var(--serif); font-style:italic; font-weight:500; font-size:19px; margin:0 0 4px;}
+  .winlog .desc{color:var(--text-dim); font-size:13px; margin-bottom:14px;}
+  .win-input-row{display:flex; gap:8px;}
+  .win-input-row input[type=text]{
+    flex:1; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    padding:9px 12px; border-radius:6px; font-family:var(--sans); font-size:14px;
+  }
+  .win-input-row input[type=text]:focus, button:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--signal); outline-offset:1px;
+  }
+  .btn{
+    background:var(--signal-soft); border:1px solid var(--signal-dim); color:var(--signal);
+    padding:9px 16px; border-radius:6px; font-family:var(--mono); font-size:12.5px; cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn:hover{background:rgba(57,181,74,0.2);}
+  .btn.ghost{background:transparent; border-color:var(--border); color:var(--text-dim);}
+  .btn.ghost:hover{border-color:var(--text-dim); color:var(--text);}
+  .win-list{list-style:none; margin:14px 0 0; padding:0; display:flex; flex-direction:column; gap:8px;}
+  .win-item{
+    display:flex; justify-content:space-between; gap:12px; align-items:center;
+    background:var(--panel-2); border:1px solid var(--border-soft); border-radius:6px; padding:9px 12px;
+  }
+  .win-item .txt{font-size:13.5px;}
+  .win-item .meta{font-family:var(--mono); font-size:10.5px; color:var(--text-faint); white-space:nowrap;}
+  .win-item .del{background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:14px; padding:0 4px;}
+  .win-item .del:hover{color:var(--amber);}
+  .win-empty{color:var(--text-faint); font-size:13px; font-style:italic;}
+
+  /* ---------- Phase nav ---------- */
+  .phasenav{display:flex; flex-wrap:wrap; gap:8px; margin:34px 0 6px;}
+  .phasenav a{
+    font-family:var(--mono); font-size:11.5px; color:var(--text-dim); text-decoration:none;
+    border:1px solid var(--border); padding:6px 10px; border-radius:99px; transition:border-color .15s, color .15s;
+  }
+  .phasenav a:hover{border-color:var(--signal); color:var(--signal);}
+
+  /* ---------- Phase card ---------- */
+  .phase{
+    margin-top:36px; border:1px solid var(--border); border-radius:var(--radius);
+    background:var(--panel); overflow:hidden; scroll-margin-top:80px;
+  }
+  .phase-head{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+    padding:22px 24px 18px; cursor:pointer; user-select:none;
+  }
+  .phase-head:hover{background:rgba(255,255,255,0.015);}
+  .phase-num{font-family:var(--mono); font-size:12px; color:var(--signal);}
+  .phase-title{font-family:var(--serif); font-weight:600; font-size:22px; margin:4px 0 6px;}
+  .phase-tagline{color:var(--text-dim); font-size:13.5px; max-width:56ch;}
+  .phase-meta{text-align:right; flex-shrink:0;}
+  .phase-pct{font-family:var(--mono); font-size:20px; color:var(--signal);}
+  .phase-pct-label{font-family:var(--mono); font-size:10px; color:var(--text-faint); text-transform:uppercase;}
+  .chev{font-size:14px; color:var(--text-faint); margin-top:6px; transition:transform .2s;}
+  .phase.collapsed .chev{transform:rotate(-90deg);}
+  .phase-body{padding:0 24px 26px; display:grid; grid-template-columns:150px 1fr; gap:26px;}
+  .phase.collapsed .phase-body{display:none;}
+  @media (max-width:680px){ .phase-body{grid-template-columns:1fr;} }
+
+  /* ---------- Bloom ladder ---------- */
+  .ladder{display:flex; flex-direction:column-reverse; gap:0; position:relative;}
+  .rung{position:relative; padding:9px 0 9px 22px; border-left:2px solid var(--border-soft); cursor:pointer;}
+  .rung:last-child{border-left:2px solid transparent;}
+  .rung.checked{border-left-color:var(--signal-dim);}
+  .rung::before{
+    content:''; position:absolute; left:-7px; top:12px; width:12px; height:12px;
+    border-radius:50%; background:var(--panel-2); border:2px solid var(--text-faint);
+  }
+  .rung.checked::before{background:var(--signal); border-color:var(--signal); box-shadow:0 0 8px rgba(57,181,74,0.5);}
+  .rung input{position:absolute; opacity:0; width:1px; height:1px;}
+  .rung .lvl{font-family:var(--mono); font-size:11.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--text-dim);}
+  .rung.checked .lvl{color:var(--signal);}
+  .rung .lvl-desc{font-size:12px; color:var(--text-faint); margin-top:2px; line-height:1.4; max-width:180px;}
+  .ladder-empty{
+    font-family:var(--serif); font-style:italic; color:var(--text-dim); font-size:13.5px;
+    border-left:2px dashed var(--border); padding:6px 0 6px 16px;
+  }
+
+  /* ---------- Checklists ---------- */
+  .block{margin-bottom:22px;}
+  .block:last-child{margin-bottom:0;}
+  .block h3{
+    font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--text-dim); margin:0 0 10px; display:flex; align-items:center; gap:8px;
+  }
+  .block h3 .count{color:var(--text-faint); font-weight:400; text-transform:none; letter-spacing:0;}
+  .checklist{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px;}
+  .check-row{display:flex; align-items:flex-start; gap:10px; padding:7px 8px; border-radius:6px;}
+  .check-row:hover{background:var(--panel-2);}
+  .check-row input[type=checkbox]{
+    appearance:none; -webkit-appearance:none; width:16px; height:16px; flex-shrink:0; margin-top:2px;
+    border:1.5px solid var(--text-faint); border-radius:4px; background:transparent; cursor:pointer; position:relative;
+  }
+  .check-row input[type=checkbox]:checked{background:var(--signal); border-color:var(--signal);}
+  .check-row input[type=checkbox]:checked::after{
+    content:''; position:absolute; left:4px; top:1px; width:4px; height:8px;
+    border:solid var(--bg); border-width:0 2px 2px 0; transform:rotate(45deg);
+  }
+  .check-row label{font-size:13.5px; cursor:pointer; color:var(--text);}
+  .check-row.done label{color:var(--text-dim); text-decoration:line-through; text-decoration-color:var(--text-faint);}
+  .check-row label a{color:var(--signal); text-decoration:none; border-bottom:1px solid var(--signal-dim); font-weight:500;}
+  .check-row label a:hover{border-bottom-color:var(--signal);}
+  .res-note{display:block; font-size:11.5px; color:var(--text-faint); margin-top:3px; font-style:italic; font-family:var(--serif); text-decoration:none;}
+
+  .mastery{
+    margin-top:14px; padding:12px 14px; border-radius:6px; background:var(--signal-soft);
+    border-left:3px solid var(--signal-dim); font-size:12.5px; color:var(--text);
+  }
+  .mastery b{color:var(--signal); font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; display:block; margin-bottom:4px;}
+
+  .info-note{
+    border-left:2px dashed var(--border); padding:8px 0 8px 16px; font-size:13px; color:var(--text-dim);
+    font-style:italic; font-family:var(--serif); margin-bottom:18px;
+  }
+
+  textarea.notes{
+    width:100%; min-height:70px; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); border-radius:6px; padding:10px 12px; font-family:var(--sans); font-size:13px;
+    resize:vertical;
+  }
+
+  /* ---------- Readiness gate ---------- */
+  #gate{margin-top:44px; border:1px solid var(--signal-dim); border-radius:var(--radius); background:var(--panel); padding:26px 26px 24px;}
+  #gate .eyebrow{margin-bottom:4px;}
+  #gate h2{font-family:var(--serif); font-weight:600; font-size:24px; margin:6px 0 8px;}
+  #gate .sub{margin-bottom:18px;}
+  .gate-list{list-style:none; margin:0; padding:0; counter-reset:gate;}
+  .gate-item{display:flex; gap:12px; padding:10px 8px; border-bottom:1px solid var(--border-soft); align-items:flex-start;}
+  .gate-item:last-child{border-bottom:none;}
+  .gate-item input[type=checkbox]{margin-top:3px;}
+  .gate-num{font-family:var(--mono); color:var(--text-faint); font-size:12px; width:20px; flex-shrink:0; padding-top:1px;}
+
+  /* ---------- Footer ---------- */
+  footer{margin-top:50px; padding-top:20px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;}
+  .footer-actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .saved-note{font-family:var(--mono); font-size:11px; color:var(--text-faint);}
+  #import-input{display:none;}
+</style>
 </head>
 <body>
-<div class="app" id="app">
-
-  <!-- ── App Header ─────────────────────────────── -->
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="header-brand">
-        <span class="brand-glyph">◈</span>
-        <div class="brand-text">
-          <span class="brand-unit">Physics</span>
-          <span class="brand-num">Review</span>
-        </div>
-      </div>
-      <span class="header-date" id="header-date"></span>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">QFT Readiness // Tracker</div>
+    <div class="progress-shell">
+      <div class="progress-track"><div class="progress-fill" id="overall-fill"></div></div>
+      <div class="progress-label"><span id="overall-pct">0%</span><span id="overall-count">0 / 0 checkpoints</span></div>
     </div>
-    <div class="header-line"></div>
-  </header>
-
-  <!-- ── App Body ────────────────────────────────── -->
-  <div class="app-layout">
-
-    <!-- ── Navigation ─────────────────────────────── -->
-    <nav class="app-nav">
-      <button class="nav-btn active" id="nav-plan" data-view="plan">
-        <span class="nav-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-          </svg>
-        </span>
-        <span class="nav-label">Curriculum</span>
-      </button>
-      <button class="nav-btn" id="nav-problems" data-view="problems">
-        <span class="nav-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="6" x2="20" y2="6"/>
-            <line x1="4" y1="12" x2="14" y2="12"/>
-            <path d="M18 15l2 2 4-4" stroke-width="2"/>
-            <line x1="4" y1="18" x2="12" y2="18"/>
-          </svg>
-        </span>
-        <span class="nav-label">Problems</span>
-      </button>
-      <div class="nav-footer">
-        <div class="nav-footer-label">45-WEEK PLAN</div>
-        <div class="nav-footer-sub">EFT for Gravity</div>
-      </div>
-    </nav>
-
-    <!-- ── Main Content ────────────────────────── -->
-    <main class="app-main">
-
-      <!-- View 1: Curriculum -->
-      <section class="view active" id="view-plan">
-        <div class="view-title-bar">
-          <h2 class="view-title">Curriculum</h2>
-        </div>
-        <div class="progress-card" id="progress-card">
-          <div class="progress-card-top">
-            <div class="progress-card-left">
-              <span class="prog-eyebrow">OVERALL PROGRESS</span>
-              <span class="prog-count" id="prog-count">0 of 0 complete</span>
-            </div>
-            <span class="prog-pct" id="prog-pct">0%</span>
-          </div>
-          <div class="prog-track">
-            <div class="prog-bar" id="prog-bar"></div>
-          </div>
-          <div class="prog-footer">
-            <span class="prog-label-sm" id="prog-phase">Phase 0 — Diagnostic</span>
-            <span class="prog-label-sm">45-week plan</span>
-          </div>
-        </div>
-        <div class="curriculum-list" id="curriculum-list"></div>
-      </section>
-
-      <!-- View 2: Problem Sets -->
-      <section class="view" id="view-problems">
-        <div class="view-title-bar">
-          <h2 class="view-title">Problem Sets</h2>
-        </div>
-        <div class="ps-filter-wrap">
-          <div class="ps-filters" id="ps-filters"></div>
-        </div>
-        <div class="ps-list" id="ps-list"></div>
-      </section>
-
-    </main>
+    <div class="elapsed" id="elapsed-text"></div>
   </div>
+</div>
+
+<div id="app">
+
+  <section class="intro">
+    <div class="eyebrow">Self-directed curriculum</div>
+    <h1>QFT Readiness Program</h1>
+    <p class="sub">Prerequisite mastery across Classical Mechanics, Special Relativity, Electrodynamics, Mathematical Methods, and Advanced QM — structured on Bloom's Taxonomy, proven with your own Python builds.</p>
+
+    <div class="reset-note">
+      <b>On the year off:</b> a year without a problem set doesn't erase an M.S. — it just means the calculation muscle is cold. Phase −1 exists specifically to warm it back up before anything here is expected to feel fast. Go through it without judgment; everyone re-entering technical work after a break needs exactly this step, and skipping it is what actually causes trouble later.
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="start-date">Start date</label>
+        <input type="date" id="start-date">
+      </div>
+      <button class="btn ghost" id="jump-btn" onclick="document.getElementById('phase-pm1').scrollIntoView()">Jump to Phase −1 ↓</button>
+    </div>
+  </section>
+
+  <section class="winlog">
+    <h2>Confidence log</h2>
+    <div class="desc">A running record of solved problems and small wins. This is the evidence file — reread it whenever doubt shows up.</div>
+    <div class="win-input-row">
+      <input type="text" id="win-text" placeholder="e.g. Solved Griffiths 4.12 clean, no notes, 20 min">
+      <button class="btn" id="win-add">Log it</button>
+    </div>
+    <ul class="win-list" id="win-list"></ul>
+  </section>
+
+  <nav class="phasenav" id="phasenav"></nav>
+
+  <div id="phases"></div>
+
+  <section id="gate"></section>
+
+  <footer>
+    <div class="saved-note" id="saved-note">Progress saves automatically to this browser.</div>
+    <div class="footer-actions">
+      <button class="btn ghost" id="export-btn">Export progress (.json)</button>
+      <button class="btn ghost" id="import-btn">Import progress</button>
+      <input type="file" id="import-input" accept="application/json">
+      <button class="btn ghost" id="reset-btn">Reset all</button>
+    </div>
+  </footer>
 
 </div>
-<script src="app.js"></script>
+
+<script>
+(function(){
+
+  const STORAGE_KEY = "qft-readiness-v1";
+
+  const DATA = {
+    phases: [
+      {
+        id:"pm1", num:"−1", title:"Rust Removal",
+        tagline:"Warm-up: rebuilding raw calculation fluency after time away from problem sets.",
+        resources:[
+          {t:"Paul's Online Math Notes — Calculus I/II/III &amp; Differential Equations", u:"https://tutorial.math.lamar.edu/", n:"Free, fast, no-nonsense refreshers on integration techniques, Taylor series, and ODEs. Built for exactly this."},
+          {t:"Schaum's Outline of 3000 Solved Problems in Calculus", n:"Pure volume drilling, not concept-building. Use it only to get the pencil moving again."}
+        ],
+        diagnosticLabel:"Warm-up drills",
+        diagnostic:[
+          "Evaluate 10 integrals by hand — u-substitution, integration by parts, trig substitution. No CAS.",
+          "Rebuild Taylor series for sin x, cos x, e^x, and ln(1+x) from scratch, then use one to approximate a physical quantity.",
+          "Solve 5 ODEs by hand — separable, linear first-order, constant-coefficient homogeneous second-order.",
+          "Refresh vector calculus: compute grad, div, and curl for three sample fields by hand; verify curl(grad f) = 0.",
+          "Complex number arithmetic: polar form, De Moivre's theorem, solve z^n = 1 for n = 3, 4, 6.",
+          "Dimensional analysis: derive the functional form of the pendulum period, orbital velocity, and an RC time constant from dimensions alone.",
+          "Diagonalize a 3x3 symmetric matrix by hand and check the eigenvectors are orthogonal.",
+          "Timed set: 5 plug-and-chug problems from an intro mechanics or E&M text, no notes, just to get the pencil moving again."
+        ],
+        bloom:[], createTitle:"", createTasks:[], masteryProof:"",
+        note:"No Bloom ladder for this phase on purpose — this is pure fluency reps, not new conceptual territory. The only deliverable is a Confidence Log entry once the drills feel routine again."
+      },
+      {
+        id:"p0", num:"0", title:"Mathematical Foundations",
+        tagline:"Complex analysis, Green's functions, and the algebra underneath everything else.",
+        resources:[
+          {t:"MIT OCW 18.04 — Complex Variables with Applications", u:"https://ocw.mit.edu/courses/18-04-complex-variables-with-applications-spring-2018/", n:"Free full course: Cauchy's theorem, residues, contour integration, Fourier and Laplace transforms."},
+          {t:"Arfken, Weber &amp; Harris — Mathematical Methods for Physicists", n:"The standard graduate reference for complex analysis and Green's functions. Dense but complete."},
+          {t:"Boas — Mathematical Methods in the Physical Sciences", n:"A gentler alternative to Arfken if intuition needs rebuilding before the rigor."},
+          {t:"Zee — Group Theory in a Nutshell for Physicists", n:"Ch. 1-2 for SU(2)/SO(3) generators and Casimir operators, written for physicists rather than mathematicians."}
+        ],
+        diagnosticLabel:"Diagnostic checklist",
+        diagnostic:[
+          "Complex analysis: analyticity, Cauchy-Riemann conditions, the residue theorem, contour integration, branch cuts.",
+          "Green's functions: definition, use in solving inhomogeneous ODEs/PDEs, and how boundary conditions select retarded vs. advanced vs. Feynman prescriptions.",
+          "Fourier transforms and distributions — the Dirac delta as a distribution, not a function.",
+          "Linear algebra of Hilbert spaces: spectral theorem, completeness, Hermitian vs. unitary operators.",
+          "Group theory: Lie groups and algebras; SU(2) and SO(3) generators, commutation relations, Casimir operators.",
+          "Tensor index gymnastics: raising and lowering, contraction, symmetric/antisymmetric decomposition."
+        ],
+        bloom:[
+          {level:"Remember", desc:"Recite the residue theorem, Cauchy-Riemann conditions, and L·G(x,x') = delta(x-x')."},
+          {level:"Understand", desc:"Explain why the i-epsilon prescription in a propagator denominator is a choice of contour around a pole."},
+          {level:"Apply", desc:"Solve 10-15 contour integrals by residues; solve 3 inhomogeneous ODEs via Green's function construction."},
+          {level:"Analyze", desc:"Given retarded, advanced, and Feynman Green's functions, identify exactly which boundary condition each encodes."},
+          {level:"Evaluate", desc:"Argue whether the delta function is really a function, and what breaks if treated naively."},
+          {level:"Create", desc:"Build Project 0 — the Green's function and contour integration toolkit."}
+        ],
+        createTitle:"Project 0 — Green's Function &amp; Contour Integration Toolkit",
+        createTasks:[
+          "Write a numerical residue calculator for rational meromorphic functions; validate against direct contour integration.",
+          "Solve the damped driven harmonic oscillator two ways — time-domain Green's function convolution and frequency-domain Fourier analysis — confirm agreement.",
+          "Implement retarded, advanced, and Feynman propagators for a 1D wave equation via different i-epsilon contour deformations around the same poles."
+        ],
+        masteryProof:"Three physically different answers from one formula, purely by choosing how to walk around a pole — and you can explain why that isn't a trick."
+      },
+      {
+        id:"p1", num:"1", title:"Classical Mechanics → Field Theory",
+        tagline:"Lagrangian and Hamiltonian mechanics, Noether's theorem, and the continuum limit that seeds field theory.",
+        resources:[
+          {t:"David Tong — Classical Dynamics (lecture notes)", u:"https://www.damtp.cam.ac.uk/user/tong/dynamics.html", n:"Free. Lagrangian and Hamiltonian formulations, Noether's theorem, small oscillations — chapters 1, 2, and 4."},
+          {t:"Goldstein, Poole &amp; Safko — Classical Mechanics", n:"Ch. 1-2 (Lagrangian mechanics), Ch. 6 (small oscillations), Ch. 8-9 (Hamiltonian and canonical transformations). The canonical graduate text."},
+          {t:"Susskind &amp; Hrabovsky — The Theoretical Minimum, Vol. 1: Classical Mechanics", n:"Built specifically for physicists returning to the subject after time away — excellent for rebuilding intuition before Goldstein's rigor."}
+        ],
+        diagnosticLabel:"Diagnostic checklist",
+        diagnostic:[
+          "Principle of stationary action; derive the Euler-Lagrange equations from delta S = 0.",
+          "Legendre transform L(q, q-dot) to H(q, p); Hamilton's equations.",
+          "Poisson brackets: algebra, {q,p} = 1, as the classical shadow of commutators.",
+          "Canonical transformations and generating functions.",
+          "Noether's theorem: derive that continuous symmetry implies a conserved current.",
+          "Small oscillations: normal modes, diagonalizing coupled oscillator systems.",
+          "The continuum limit of a coupled-oscillator chain becoming a classical field theory.",
+          "Hamilton-Jacobi theory (useful later for WKB and path integrals)."
+        ],
+        bloom:[
+          {level:"Remember", desc:"State the Euler-Lagrange equations, Hamilton's equations, and Noether's theorem from memory."},
+          {level:"Understand", desc:"Explain why Lagrangian mechanics generalizes to fields more naturally than Newton's laws."},
+          {level:"Apply", desc:"Derive equations of motion for 5 systems of increasing complexity, ending with an N-mass chain."},
+          {level:"Analyze", desc:"Take the N-mass chain to N to infinity, a to 0, and identify which terms survive to become the wave equation."},
+          {level:"Evaluate", desc:"Compare Lagrangian vs. Hamiltonian mechanics — where each is superior, and why QFT needs both."},
+          {level:"Create", desc:"Build Project 1 — from oscillators to fields."}
+        ],
+        createTitle:"Project 1 — From Oscillators to Fields",
+        createTasks:[
+          "Use SymPy to symbolically derive equations of motion for a chain of N coupled masses and springs.",
+          "Numerically diagonalize normal modes for N = 5, 20, 100; verify energy and momentum conservation to floating-point precision.",
+          "Take N to infinity, a to 0 with Na fixed; show the discrete dispersion relation converges to omega = ck.",
+          "Extra credit: replace linear springs with a phi^4 nonlinearity and observe soliton-like localized excitations."
+        ],
+        masteryProof:"You will have watched a classical field theory emerge from particle mechanics, numerically — the exact move QFT asks you to reverse."
+      },
+      {
+        id:"p2", num:"2", title:"Special Relativity",
+        tagline:"Four-vectors, the Lorentz group, and covariance as a design requirement.",
+        resources:[
+          {t:"David Tong — Dynamics and Relativity (lecture notes)", u:"https://www.damtp.cam.ac.uk/user/tong/relativity.html", n:"Free. The special relativity content is in the final chapters of this first-year course — quick to review, not a bad thing after a year off."},
+          {t:"Susskind &amp; Friedman — Special Relativity and Classical Field Theory: The Theoretical Minimum, Vol. 3", n:"Lectures 1-3: Lorentz transformations, four-vectors, relativistic dynamics. Exceptionally clear on the physical motivation."},
+          {t:"Taylor &amp; Wheeler — Spacetime Physics", n:"Unmatched for building real intuition about the invariant interval and simultaneity — worth the detour even at the graduate level."}
+        ],
+        diagnosticLabel:"Diagnostic checklist",
+        diagnostic:[
+          "Postulates of SR; derivation of the Lorentz transformation.",
+          "Four-vectors, upper/lower indices, the Minkowski metric, and your chosen signature convention.",
+          "Proper time, four-velocity, four-momentum, and the mass-shell condition p·p = m^2 c^2.",
+          "Relativistic kinematics for collisions and decays — invariant mass, threshold energies.",
+          "Structure of the Lorentz group: boosts and rotations as generators; rapidity.",
+          "What it means for an equation to be covariant, and why that's a hard constraint on any field theory."
+        ],
+        bloom:[
+          {level:"Remember", desc:"Recite the Lorentz transformation matrix, invariant interval, and mass-shell condition."},
+          {level:"Understand", desc:"Explain why covariance is a design requirement for a physical law, not an aesthetic preference."},
+          {level:"Apply", desc:"Solve 8-10 relativistic kinematics problems — decays, Compton kinematics, threshold energies."},
+          {level:"Analyze", desc:"Decompose the Lorentz group's connected components and identify which physical statements depend on the distinction."},
+          {level:"Evaluate", desc:"Given a modified dispersion relation, judge whether it can be Lorentz covariant and defend the reasoning."},
+          {level:"Create", desc:"Build Project 2 — the relativistic kinematics and tensor engine."}
+        ],
+        createTitle:"Project 2 — Relativistic Kinematics &amp; Tensor Engine",
+        createTasks:[
+          "Build a four-vector class carrying the Minkowski metric; implement Lorentz boosts as explicit matrices.",
+          "Generate random boosts and verify the interval x·x is invariant to machine precision.",
+          "Simulate a relativistic two-body decay and collision; verify four-momentum conservation and reconstruct invariant mass.",
+          "Animate two spacelike-separated events under different boosts to visualize relativity of simultaneity."
+        ],
+        masteryProof:"A working physics engine that enforces Lorentz covariance by construction — the same discipline every term in a QFT Lagrangian must obey."
+      },
+      {
+        id:"p3", num:"3", title:"Electrodynamics as a Gauge Theory",
+        tagline:"Maxwell's equations, gauge invariance, and radiation — your first gauge theory.",
+        resources:[
+          {t:"David Tong — Electromagnetism (lecture notes)", u:"https://www.damtp.cam.ac.uk/user/tong/em.html", n:"Free. Covers the full covariant formulation, gauge invariance, and radiation — the later chapters are exactly this phase."},
+          {t:"Susskind &amp; Friedman — Special Relativity and Classical Field Theory, Vol. 3, Lectures 6-11", n:"Derives Maxwell's equations from the Lagrangian and gauge invariance directly — the single best on-ramp to seeing EM as a gauge theory."},
+          {t:"Griffiths — Introduction to Electrodynamics", n:"Ch. 10 (radiation) and Ch. 12 (relativistic electrodynamics) for a worked-example-heavy treatment."},
+          {t:"Jackson — Classical Electrodynamics", n:"Ch. 6 (Green's functions for the wave equation), Ch. 11-12 (covariant formulation), Ch. 14 (radiation). The graduate rite of passage — dense, but this is where the real fluency comes from."}
+        ],
+        diagnosticLabel:"Diagnostic checklist",
+        diagnostic:[
+          "Maxwell's equations, both in (E,B) form and covariant form via F^mu-nu.",
+          "Gauge invariance: A_mu to A_mu + partial_mu(lambda); Lorenz gauge fixing.",
+          "The wave equation for the potentials; retarded Green's functions.",
+          "Lienard-Wiechert potentials and radiation from accelerated charges.",
+          "The stress-energy tensor of the EM field.",
+          "The action principle for electrodynamics, recognized explicitly as a U(1) gauge theory."
+        ],
+        bloom:[
+          {level:"Remember", desc:"Write Maxwell's equations in covariant form from memory."},
+          {level:"Understand", desc:"Explain gauge invariance as a redundancy in description, and why that redundancy reappears in Yang-Mills theory."},
+          {level:"Apply", desc:"Derive the Lienard-Wiechert potentials; compute radiated power for 3 accelerated-charge scenarios."},
+          {level:"Analyze", desc:"Break down the EM action term by term and identify which term is fixed by gauge invariance alone."},
+          {level:"Evaluate", desc:"Argue that the photon is massless because of gauge invariance, using the Proca mass term's incompatibility as evidence."},
+          {level:"Create", desc:"Build Project 3 — radiation from first principles."}
+        ],
+        createTitle:"Project 3 — Radiation From First Principles",
+        createTasks:[
+          "Numerically compute Lienard-Wiechert potentials for an accelerating point charge (start with circular motion), solving for retarded time via root-finding.",
+          "Animate the radiated E and B fields; integrate the Poynting vector over an enclosing sphere and confirm agreement with the Larmor formula.",
+          "Apply an explicit gauge transformation to the potentials and verify the physical E and B fields are unchanged."
+        ],
+        masteryProof:"Gauge invariance stops being a formal nicety and becomes a hard numerical constraint your code satisfies exactly."
+      },
+      {
+        id:"p4", num:"4", title:"Advanced Quantum Mechanics",
+        tagline:"Second quantization, path integrals, and the most direct on-ramp to QFT.",
+        resources:[
+          {t:"David Tong — Topics in Quantum Mechanics (lecture notes)", u:"http://www.damtp.cam.ac.uk/user/tong/topicsinqm.html", n:"Free. WKB, the variational method, and scattering theory in full."},
+          {t:"MIT OCW 8.06 — Quantum Physics III (Zwiebach)", u:"https://ocw.mit.edu/courses/8-06-quantum-physics-iii-spring-2018/", n:"Free full course with problem sets. Strong on perturbation theory and scattering."},
+          {t:"Sakurai &amp; Napolitano — Modern Quantum Mechanics", n:"Ch. 5 (perturbation theory), Ch. 6-7 (scattering), Ch. 2.5 (path integrals). The standard bridge text into QFT-style thinking."},
+          {t:"Shankar — Principles of Quantum Mechanics", n:"Ch. 21 has one of the clearest available treatments of identical particles and second quantization — read this one closely."},
+          {t:"Susskind &amp; Friedman — Quantum Mechanics: The Theoretical Minimum, Vol. 2", n:"If any core QM concept feels shaky, rebuild it here before Sakurai — it's built for exactly that repair job."}
+        ],
+        diagnosticLabel:"Diagnostic checklist",
+        diagnostic:[
+          "Dirac bra-ket formalism and the postulates of QM in Hilbert-space language.",
+          "Angular momentum algebra: ladder operators, addition of angular momenta, Clebsch-Gordan.",
+          "Spin-1/2, Pauli matrices, and their identification as generators of SU(2).",
+          "Time-independent and time-dependent perturbation theory.",
+          "Scattering theory: cross sections, Born approximation, partial wave analysis.",
+          "Identical particles and second quantization — creation/annihilation operators, occupation number formalism.",
+          "WKB approximation.",
+          "Feynman path integral formulation — the propagator as a sum over histories.",
+          "Symmetries in QM: unitary/antiunitary operators, Wigner's theorem, conserved quantum numbers."
+        ],
+        bloom:[
+          {level:"Remember", desc:"State [a, a-dagger], the angular momentum algebra, and the postulates of second quantization."},
+          {level:"Understand", desc:"Explain why identical particles force occupation-number (Fock space) language."},
+          {level:"Apply", desc:"Work 10+ problems across perturbation theory, Born-approximation scattering, and ladder operators."},
+          {level:"Analyze", desc:"For the QHO, identify which structural features carry over unchanged when a classical field mode is promoted to an operator."},
+          {level:"Evaluate", desc:"Compare path-integral vs. canonical-operator approaches to the QHO propagator — which formalism makes which physics manifest."},
+          {level:"Create", desc:"Build Project 4 — path integrals and second quantization."}
+        ],
+        createTitle:"Project 4 — Path Integrals &amp; Second Quantization",
+        createTasks:[
+          "Implement the discretized Euclidean path integral for the harmonic oscillator via Metropolis Monte Carlo; extract the ground state energy and confirm convergence to h-bar*omega/2.",
+          "Build the ladder-operator matrix representation of the QHO in a truncated Fock basis; verify [a, a-dagger] = 1 and check matrix elements of x and p.",
+          "Numerically solve the driven two-level system's time-dependent Schrodinger equation and compare the transition probability to Fermi's Golden Rule."
+        ],
+        masteryProof:"The same system solved three conceptually distinct QFT-relevant ways — path integral, operator algebra, perturbation theory — all agreeing, in your own code."
+      },
+      {
+        id:"p5", num:"5", title:"Capstone Synthesis",
+        tagline:"Canonical quantization of a free scalar field, built from your own oscillator-chain code.",
+        resources:[
+          {t:"David Tong — Quantum Field Theory (lecture notes), Sections 1-2", u:"https://www.damtp.cam.ac.uk/user/tong/qft.html", n:"Free. Classical Field Theory and Canonical Quantization — read this after finishing the capstone build, as the answer key."},
+          {t:"Zee — Quantum Field Theory in a Nutshell", n:"Ch. I.2-I.3 for a fast, conceptual read of the free scalar field and its propagator."},
+          {t:"Peskin &amp; Schroeder — An Introduction to Quantum Field Theory", n:"Ch. 2: the free scalar field, canonical quantization, and the Feynman propagator. This chapter is the actual destination of this entire program."}
+        ],
+        diagnosticLabel:"", diagnostic:[],
+        bloom:[],
+        note:"Every prior phase folds into one construction here — Remember through Evaluate are exercised implicitly as you assemble the pieces. The deliverable is the build itself.",
+        createTitle:"Capstone — Canonical Quantization of a Free Scalar Field on a Lattice",
+        createTasks:[
+          "Discretize a 1+1D scalar field on the Project 1 oscillator chain — the classical field theory is already built.",
+          "Diagonalize into normal modes; treat each independent mode as its own QHO using the Project 4 ladder-operator machinery.",
+          "Construct a truncated many-mode Fock space and build the field operator phi-hat(x,t) as an explicit mode sum.",
+          "Numerically compute the vacuum two-point correlation function &lt;0| phi-hat(x,t) phi-hat(y,t&#39;) |0&gt;.",
+          "Compare the numerical result against the analytic free Feynman propagator and confirm agreement."
+        ],
+        masteryProof:"There is no stronger available proof, short of original research, that you understand what a quantum field is — you will have built one, quantized it, and pulled a propagator out of it, before opening a QFT textbook."
+      }
+    ],
+    readinessGate:[
+      "Derive the Euler-Lagrange equations from delta S = 0 for a field theory — with a Lagrangian density, not a particle Lagrangian.",
+      "State and prove Noether's theorem for an internal symmetry, and identify the conserved current.",
+      "Write the Lorentz transformation for a four-vector and a rank-2 tensor; explain why F^mu-nu must transform as the latter.",
+      "Explain, without equations, why gauge invariance forces the photon to be massless.",
+      "Derive the retarded Green's function for the 1D wave operator using contour integration and the i-epsilon prescription.",
+      "Construct the QHO number-operator eigenstates from ladder operators and derive the energy spectrum.",
+      "Explain the conceptual necessity of second quantization for a system of N identical bosons.",
+      "Write the Feynman path integral for a free particle and explain how the classical trajectory emerges as h-bar to 0.",
+      "Explain what it means to quantize a field, in one sentence that would satisfy a skeptical committee member.",
+      "State the mass-shell condition and its role as the defining equation of a free relativistic particle's propagator."
+    ]
+  };
+
+  /* ---------- State ---------- */
+  let state = loadState();
+
+  function defaultState(){
+    return { startDate:"", wins:[], checks:{}, notes:{} };
+  }
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultState();
+      const parsed = JSON.parse(raw);
+      return Object.assign(defaultState(), parsed);
+    }catch(e){ return defaultState(); }
+  }
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const note = document.getElementById("saved-note");
+    note.textContent = "Saved to this browser — " + new Date().toLocaleTimeString();
+  }
+
+  /* ---------- Helpers ---------- */
+  function esc(s){ return s; } // content is pre-authored, not user HTML injection risk here
+  function countAll(){
+    let total = 0, done = 0;
+    DATA.phases.forEach(p=>{
+      const c = countPhase(p);
+      total += c.total; done += c.done;
+    });
+    DATA.readinessGate.forEach((_,i)=>{ total++; if(state.checks["gate-"+i]) done++; });
+    return {total, done};
+  }
+  function countPhase(p){
+    let total = 0, done = 0;
+    (p.resources||[]).forEach((_,i)=>{ total++; if(state.checks[p.id+"-r"+i]) done++; });
+    p.diagnostic.forEach((_,i)=>{ total++; if(state.checks[p.id+"-d"+i]) done++; });
+    p.bloom.forEach((_,i)=>{ total++; if(state.checks[p.id+"-b"+i]) done++; });
+    p.createTasks.forEach((_,i)=>{ total++; if(state.checks[p.id+"-t"+i]) done++; });
+    return {total, done};
+  }
+
+  function renderTop(){
+    const {total, done} = countAll();
+    const pct = total ? Math.round(done/total*100) : 0;
+    document.getElementById("overall-fill").style.width = pct + "%";
+    document.getElementById("overall-pct").textContent = pct + "%";
+    document.getElementById("overall-count").textContent = done + " / " + total + " checkpoints";
+
+    const elapsedEl = document.getElementById("elapsed-text");
+    if(state.startDate){
+      const start = new Date(state.startDate + "T00:00:00");
+      const now = new Date();
+      const days = Math.max(0, Math.floor((now - start) / 86400000));
+      const weeks = Math.floor(days/7);
+      elapsedEl.textContent = "Day " + days + " (wk " + weeks + ")";
+    } else {
+      elapsedEl.textContent = "Set a start date →";
+    }
+  }
+
+  function renderWins(){
+    const list = document.getElementById("win-list");
+    if(!state.wins.length){
+      list.innerHTML = '<li class="win-empty">No entries yet — log the first small win after Phase −1.</li>';
+      return;
+    }
+    list.innerHTML = state.wins.slice().reverse().map(w=>{
+      return '<li class="win-item"><span class="txt">'+w.text+'</span>' +
+        '<span class="meta">'+w.date+'<button class="del" data-id="'+w.id+'" title="Remove">✕</button></span></li>';
+    }).join("");
+    list.querySelectorAll(".del").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        state.wins = state.wins.filter(w=>String(w.id) !== btn.dataset.id);
+        saveState(); renderWins();
+      });
+    });
+  }
+
+  function checklistHTML(items, idPrefix){
+    return items.map((text,i)=>{
+      const id = idPrefix + i;
+      const checked = !!state.checks[id];
+      return '<li class="check-row'+(checked?' done':'')+'">' +
+        '<input type="checkbox" id="'+id+'" data-id="'+id+'" '+(checked?'checked':'')+'>' +
+        '<label for="'+id+'">'+text+'</label></li>';
+    }).join("");
+  }
+
+  function resourceListHTML(resources, idPrefix){
+    return resources.map((r,i)=>{
+      const id = idPrefix + i;
+      const checked = !!state.checks[id];
+      const titleHTML = r.u
+        ? '<a href="'+r.u+'" target="_blank" rel="noopener noreferrer">'+r.t+'</a>'
+        : r.t;
+      return '<li class="check-row'+(checked?' done':'')+'">' +
+        '<input type="checkbox" id="'+id+'" data-id="'+id+'" '+(checked?'checked':'')+'>' +
+        '<label for="'+id+'">'+titleHTML+'<span class="res-note">'+r.n+'</span></label></li>';
+    }).join("");
+  }
+
+  function ladderHTML(bloom, idPrefix){
+    if(!bloom.length) return "";
+    return '<div class="ladder">' + bloom.map((b,i)=>{
+      const id = idPrefix + i;
+      const checked = !!state.checks[id];
+      return '<div class="rung'+(checked?' checked':'')+'" data-target="'+id+'">' +
+        '<input type="checkbox" id="'+id+'" data-id="'+id+'" '+(checked?'checked':'')+'>' +
+        '<div class="lvl">'+b.level+'</div>' +
+        '<div class="lvl-desc">'+b.desc+'</div></div>';
+    }).join("") + '</div>';
+  }
+
+  function renderPhases(){
+    const container = document.getElementById("phases");
+    const nav = document.getElementById("phasenav");
+    nav.innerHTML = DATA.phases.map(p=>'<a href="#phase-'+p.id+'">P'+p.num+' · '+p.title+'</a>').join("") +
+      '<a href="#gate">Readiness Gate</a>';
+
+    container.innerHTML = DATA.phases.map(p=>{
+      const {total, done} = countPhase(p);
+      const pct = total ? Math.round(done/total*100) : 0;
+
+      let resBlock = "";
+      if(p.resources && p.resources.length){
+        resBlock = '<div class="block"><h3>Read &amp; resources <span class="count">('+p.resources.filter((_,i)=>state.checks[p.id+'-r'+i]).length+'/'+p.resources.length+')</span></h3>' +
+          '<ul class="checklist">'+resourceListHTML(p.resources, p.id+"-r")+'</ul></div>';
+      }
+
+      let diagBlock = "";
+      if(p.diagnostic.length){
+        diagBlock = '<div class="block"><h3>'+p.diagnosticLabel+' <span class="count">('+p.diagnostic.filter((_,i)=>state.checks[p.id+'-d'+i]).length+'/'+p.diagnostic.length+')</span></h3>' +
+          '<ul class="checklist">'+checklistHTML(p.diagnostic, p.id+"-d")+'</ul></div>';
+      }
+
+      let createBlock = "";
+      if(p.createTasks.length){
+        createBlock = '<div class="block"><h3>'+p.createTitle+' <span class="count">('+p.createTasks.filter((_,i)=>state.checks[p.id+'-t'+i]).length+'/'+p.createTasks.length+')</span></h3>' +
+          '<ul class="checklist">'+checklistHTML(p.createTasks, p.id+"-t")+'</ul>' +
+          (p.masteryProof ? '<div class="mastery"><b>Mastery proof</b>'+p.masteryProof+'</div>' : '') +
+          '</div>';
+      }
+
+      const laddderOrNote = p.bloom.length
+        ? '<div class="ladder-wrap">'+ladderHTML(p.bloom, p.id+"-b")+'</div>'
+        : '<div class="ladder-empty">'+(p.note||"")+'</div>';
+
+      const noteVal = state.notes[p.id] || "";
+
+      return '<article class="phase" id="phase-'+p.id+'">' +
+        '<div class="phase-head" data-toggle="'+p.id+'">' +
+          '<div><div class="phase-num">PHASE '+p.num+'</div><h2 class="phase-title">'+p.title+'</h2><div class="phase-tagline">'+p.tagline+'</div></div>' +
+          '<div class="phase-meta"><div class="phase-pct">'+pct+'%</div><div class="phase-pct-label">'+done+'/'+total+'</div><div class="chev">▾</div></div>' +
+        '</div>' +
+        '<div class="phase-body">' +
+          laddderOrNote +
+          '<div class="phase-content">' +
+            resBlock + diagBlock + createBlock +
+            '<div class="block"><h3>Field notes</h3><textarea class="notes" data-notes="'+p.id+'" placeholder="Rough spots, links to your notebook, anything worth remembering.">'+noteVal+'</textarea></div>' +
+          '</div>' +
+        '</div>' +
+      '</article>';
+    }).join("");
+  }
+
+  function renderGate(){
+    const gate = document.getElementById("gate");
+    const doneCount = DATA.readinessGate.filter((_,i)=>state.checks["gate-"+i]).length;
+    gate.innerHTML =
+      '<div class="eyebrow">Before you open a QFT textbook</div>' +
+      '<h2>The Readiness Gate</h2>' +
+      '<p class="sub">Blank sheet, no notes, no code. If all ten land without hesitation, the plan is complete — and you have the Confidence Log and Create-tier builds above as the receipts. (' + doneCount + '/' + DATA.readinessGate.length + ')</p>' +
+      '<ul class="gate-list">' +
+      DATA.readinessGate.map((q,i)=>{
+        const id = "gate-"+i;
+        const checked = !!state.checks[id];
+        return '<li class="gate-item"><span class="gate-num">'+(i+1)+'.</span>' +
+          '<input type="checkbox" id="'+id+'" data-id="'+id+'" '+(checked?'checked':'')+'>' +
+          '<label for="'+id+'">'+q+'</label></li>';
+      }).join("") +
+      '</ul>';
+  }
+
+  function attachHandlers(){
+    document.body.addEventListener("change", (e)=>{
+      if(e.target.matches('input[type=checkbox][data-id]')){
+        const id = e.target.dataset.id;
+        state.checks[id] = e.target.checked;
+        saveState();
+        renderTop();
+        renderPhases();
+        renderGate();
+        attachHandlers(); // re-attach after full re-render
+      }
+      if(e.target.matches('textarea[data-notes]')){
+        state.notes[e.target.dataset.notes] = e.target.value;
+        saveState();
+      }
+      if(e.target.id === "start-date"){
+        state.startDate = e.target.value;
+        saveState();
+        renderTop();
+      }
+    });
+
+    document.body.addEventListener("input", (e)=>{
+      if(e.target.matches('textarea[data-notes]')){
+        state.notes[e.target.dataset.notes] = e.target.value;
+      }
+    });
+
+    document.querySelectorAll(".phase-head").forEach(head=>{
+      head.addEventListener("click", (e)=>{
+        if(e.target.matches("input, label")) return;
+        head.closest(".phase").classList.toggle("collapsed");
+      });
+    });
+  }
+
+  function init(){
+    document.getElementById("start-date").value = state.startDate || "";
+    renderTop();
+    renderWins();
+    renderPhases();
+    renderGate();
+    attachHandlers();
+
+    document.getElementById("win-add").addEventListener("click", addWin);
+    document.getElementById("win-text").addEventListener("keydown", (e)=>{
+      if(e.key === "Enter") addWin();
+    });
+
+    document.getElementById("export-btn").addEventListener("click", ()=>{
+      const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "qft-progress-" + new Date().toISOString().slice(0,10) + ".json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("import-btn").addEventListener("click", ()=>{
+      document.getElementById("import-input").click();
+    });
+    document.getElementById("import-input").addEventListener("change", (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const parsed = JSON.parse(reader.result);
+          state = Object.assign(defaultState(), parsed);
+          saveState();
+          document.getElementById("start-date").value = state.startDate || "";
+          renderTop(); renderWins(); renderPhases(); renderGate(); attachHandlers();
+        }catch(err){ alert("Could not read that file — is it a valid export from this tracker?"); }
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById("reset-btn").addEventListener("click", ()=>{
+      if(confirm("Reset all progress, notes, and the confidence log? This cannot be undone.")){
+        state = defaultState();
+        saveState();
+        document.getElementById("start-date").value = "";
+        renderTop(); renderWins(); renderPhases(); renderGate(); attachHandlers();
+      }
+    });
+  }
+
+  function addWin(){
+    const input = document.getElementById("win-text");
+    const text = input.value.trim();
+    if(!text) return;
+    state.wins.push({ id: Date.now(), text: text, date: new Date().toLocaleDateString() });
+    input.value = "";
+    saveState();
+    renderWins();
+  }
+
+  init();
+})();
+</script>
 </body>
 </html>
